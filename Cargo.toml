@@ -9,18 +9,9 @@ repository = "https://github.com/tomingtoming/geneuron"
 license = "MIT"
 
 [dependencies]
-ggez = "0.9"           # 2Dゲームフレームワーク
-rand = "0.8"          # 乱数生成
-nalgebra = "0.32"     # 行列計算
-rayon = "1.7"         # 並列処理
-serde = { version = "1.0", features = ["derive"] }  # シリアライゼーション
-serde_json = "1.0"    # JSON処理
-
-[target.'cfg(windows)'.dependencies]
-winapi = { version = "0.3", features = ["winuser"] }
-
-[target.'cfg(unix)'.dependencies]
-libc = "0.2"
+ggez = "0.9"           # 2D game framework
+rand = "0.8"          # Random number generation
+nalgebra = "0.32"     # Matrix calculations
 
 [profile.release]
 opt-level = 3

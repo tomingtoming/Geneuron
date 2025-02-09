@@ -19,7 +19,7 @@ A neural evolution simulation program that combines artificial life with neural 
 
 ```bash
 git clone git@github.com:tomingtoming/geneuron.git
-cd geneuron-rs
+cd geneuron
 cargo build --release
 ```
 
