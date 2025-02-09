@@ -1,0 +1,12 @@
+[package]
+name = "geneuron-rs"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ggez = "0.9"           # 2Dゲームフレームワーク
+rand = "0.8"          # 乱数生成
+nalgebra = "0.32"     # 行列計算
+rayon = "1.7"         # 並列処理
+serde = { version = "1.0", features = ["derive"] }  # シリアライゼーション
+serde_json = "1.0"    # JSON処理
