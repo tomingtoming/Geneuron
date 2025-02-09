@@ -6,6 +6,10 @@ use nalgebra as na;
 use rand::Rng;
 use std::f32::consts::PI;
 
+// 定数定義を追加
+const WINDOW_WIDTH: f32 = 800.0;
+const WINDOW_HEIGHT: f32 = 600.0;
+
 // 神経系のトレイト定義
 trait NeuralNetwork {
     fn process(&self, inputs: &[f32]) -> Vec<f32>;
@@ -254,6 +258,7 @@ struct GameState {
     world: World,
     paused: bool,
     zoom: f32,
+    window_size: (f32, f32),  // 追加：ウィンドウサイズを保持
 }
 
 impl EventHandler for GameState {
@@ -282,12 +287,12 @@ impl EventHandler for GameState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let mut canvas = Canvas::from_frame(ctx, Color::BLACK);
         
-        // ズーム適用
+        // ウィンドウサイズに基づいてズーム適用
         canvas.set_screen_coordinates(graphics::Rect::new(
             0.0, 
             0.0, 
-            800.0 / self.zoom, 
-            600.0 / self.zoom,
+            self.window_size.0 / self.zoom, 
+            self.window_size.1 / self.zoom,
         ));
 
         // 食料源の描画
@@ -350,14 +355,22 @@ impl EventHandler for GameState {
         canvas.finish(ctx)?;
         Ok(())
     }
+
+    // ウィンドウリサイズイベントのハンドラを追加
+    fn resize_event(&mut self, ctx: &mut Context, width: f32, height: f32) -> GameResult {
+        self.window_size = (width, height);
+        Ok(())
+    }
 }
 
 impl GameState {
-    fn new(_ctx: &mut Context) -> GameResult<GameState> {
+    fn new(ctx: &mut Context) -> GameResult<GameState> {
+        let (width, height) = ctx.gfx.drawable_size();
         Ok(GameState {
             world: World::new(),
             paused: false,
             zoom: 1.0,
+            window_size: (width, height),
         })
     }
 
@@ -371,7 +384,9 @@ fn main() -> GameResult {
     // ゲーム設定
     let cb = ggez::ContextBuilder::new("geneuron", "neuroevolution")
         .window_setup(ggez::conf::WindowSetup::default().title("Geneuron-RS"))
-        .window_mode(ggez::conf::WindowMode::default().dimensions(800.0, 600.0));
+        .window_mode(ggez::conf::WindowMode::default()
+            .dimensions(WINDOW_WIDTH, WINDOW_HEIGHT)
+            .resizable(true));  // ウィンドウをリサイズ可能に
     
     let (mut ctx, event_loop) = cb.build()?;
     

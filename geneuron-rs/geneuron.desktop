@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Geneuron
+Comment=Neural Evolution Simulation
+Exec=geneuron-rs
+Icon=geneuron
+Terminal=false
+Categories=Science;Education;Game;
+Keywords=Neural;Evolution;Simulation;AI;
+Version=0.1.0
+X-Author=tomingtoming
