@@ -76,7 +76,7 @@ impl Creature {
 
     fn update_behavior_state(&mut self, nearby_food: &[na::Point2<f32>], nearby_creatures: &[(usize, na::Point2<f32>, Gender, f32, f32)], bounds: (f32, f32)) {
         let has_nearby_food = nearby_food.iter()
-            .any(|food| self.physics.distance_to(food, bounds) < 100.0);
+            .any(|food| self.physics.distance_to(food, bounds) < 200.0);  // 検出範囲を100から200に増加
         
         let has_potential_mate = nearby_creatures.iter()
             .any(|other| self.can_reproduce_with(other, bounds));
@@ -84,7 +84,7 @@ impl Creature {
         let has_nearby_friends = nearby_creatures.iter()
             .filter(|(_, pos, gender, _, _)| 
                 *gender == self.gender && 
-                self.physics.distance_to(pos, bounds) < 50.0
+                self.physics.distance_to(pos, bounds) < 100.0  // 検出範囲を50から100に増加
             ).count() >= 2;
 
         self.behavior_state = match (self.physics.energy, has_nearby_food, has_potential_mate, has_nearby_friends) {
@@ -121,7 +121,7 @@ impl Creature {
             .min_by(|(_, dist_a), (_, dist_b)| dist_a.partial_cmp(dist_b).unwrap());
 
         if let Some((pos, distance)) = nearest_friend {
-            let normalized_distance = (distance / 800.0) / social_weight;
+            let normalized_distance = (distance / 1600.0) / social_weight;  // 800から1600に増加
             let (_, angle_diff) = self.physics.direction_to(pos, bounds);
             inputs.push(normalized_distance);
             inputs.push(angle_diff / PI);
@@ -133,7 +133,7 @@ impl Creature {
         // Food seeking with dynamic priority
         if let Some(nearest) = self.find_nearest_food(nearby_food, bounds) {
             let (distance, angle_diff) = self.physics.direction_to(&nearest, bounds);
-            let normalized_distance = (distance / 800.0) / food_weight;
+            let normalized_distance = (distance / 1600.0) / food_weight;  // 800から1600に増加
             inputs.push(normalized_distance);
             inputs.push(angle_diff / PI);
         } else {
@@ -147,7 +147,7 @@ impl Creature {
             .map(|(_, pos, ..)| (pos, self.physics.distance_to(pos, bounds)))
             .min_by(|(_, dist_a), (_, dist_b)| dist_a.partial_cmp(dist_b).unwrap())
         {
-            let normalized_distance = (distance / 800.0) / mate_weight;
+            let normalized_distance = (distance / 1600.0) / mate_weight;  // 800から1600に増加
             let (_, angle_diff) = self.physics.direction_to(mate_pos, bounds);
             inputs.push(normalized_distance);
             inputs.push(angle_diff / PI);
@@ -214,7 +214,7 @@ impl Creature {
         *energy >= 0.7 &&
         self.reproduction_cooldown <= 0.0 &&
         self.physics.energy >= 0.7 &&
-        self.physics.distance_to(pos, bounds) < 30.0
+        self.physics.distance_to(pos, bounds) < 60.0  // 30から60に増加
     }
 
     fn find_nearest_food(&self, food_sources: &[na::Point2<f32>], bounds: (f32, f32)) -> Option<na::Point2<f32>> {

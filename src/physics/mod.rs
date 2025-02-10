@@ -63,11 +63,11 @@ impl PhysicsState {
 
         // Calculate max speed based on energy level
         let max_speed = if energy_level > 1.0 {
-            110.0
+            220.0  // 110から220に増加
         } else if energy_level < 0.3 {
-            30.0
+            60.0   // 30から60に増加
         } else {
-            100.0
+            200.0  // 100から200に増加
         };
 
         // Update velocity with inertia and speed limit
@@ -98,16 +98,16 @@ impl PhysicsState {
         let rotation_cost = self.rotation_momentum.abs() * 0.001;  // Small cost for rotation
         
         // Progressive energy cost based on speed
-        let speed_cost = if speed < 10.0 {
+        let speed_cost = if speed < 20.0 {  // 10から20に増加
             speed * 0.00001  // Very efficient at low speeds
-        } else if speed < 50.0 {
+        } else if speed < 100.0 {  // 50から100に増加
             0.0001 * speed  // Linear cost at medium speeds
         } else {
             0.0002 * speed  // Quadratic cost at high speeds
         };
         
         // Base metabolism plus movement costs
-        0.005 * dt +  // Reduced base metabolism
+        0.003 * dt +  // 0.005から0.003に減少（広い世界での長期生存を可能に）
         speed_cost * dt +  // Movement cost
         rotation_cost * dt  // Rotation cost
     }
