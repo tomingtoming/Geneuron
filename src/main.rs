@@ -142,9 +142,9 @@ impl Creature {
             .filter(|(_, _, gender, cooldown, energy)| {
                 *gender != self.gender &&
                 *cooldown <= 0.0 &&
-                *energy >= 0.5 &&
+                *energy >= 0.7 &&  // Increased energy threshold
                 self.reproduction_cooldown <= 0.0 &&
-                self.physics.energy >= 0.5
+                self.physics.energy >= 0.7
             })
             .map(|(_, pos, ..)| (pos, na::distance(&self.physics.position, pos)))
             .min_by(|(_, dist_a), (_, dist_b)| dist_a.partial_cmp(dist_b).unwrap());
@@ -152,20 +152,26 @@ impl Creature {
         // Add mate-related inputs
         if let Some((mate_pos, distance)) = nearest_mate {
             let direction = mate_pos - self.physics.position;
-            inputs.push(distance / 800.0); // Normalize distance
+            inputs.push(distance / 800.0);
             let target_angle = direction.y.atan2(direction.x);
             let angle_diff = (target_angle - self.physics.rotation + PI) % (2.0 * PI) - PI;
             inputs.push(angle_diff / PI);
         } else {
-            inputs.push(1.0); // No mate nearby
-            inputs.push(0.0); // Neutral angle
+            inputs.push(1.0);
+            inputs.push(0.0);
         }
 
-        // Find nearest food
+        // Find nearest food with priority based on energy level
         if let Some(nearest) = self.find_nearest_food(nearby_food) {
             let direction = nearest - self.physics.position;
             let distance = direction.norm();
-            inputs.push(distance / 800.0);
+            // Adjust food priority based on energy level
+            let adjusted_distance = if self.physics.energy < 0.3 {
+                distance * 0.5  // Make food appear closer when energy is low
+            } else {
+                distance
+            };
+            inputs.push(adjusted_distance / 800.0);
             let target_angle = direction.y.atan2(direction.x);
             let angle_diff = (target_angle - self.physics.rotation + PI) % (2.0 * PI) - PI;
             inputs.push(angle_diff / PI);
@@ -176,15 +182,32 @@ impl Creature {
         
         // Process through neural network and apply movement
         let outputs = self.brain[0].process(&inputs);
-        let forward_speed = outputs[0] * 150.0;
+        
+        // More nuanced speed control based on energy and situation
+        let base_speed = outputs[0] * 150.0;
+        let forward_speed = if self.physics.energy < 0.3 {
+            base_speed * 0.7  // Reduce speed when low on energy
+        } else if self.physics.energy > 1.2 {
+            base_speed * 1.2  // Boost speed when energy is abundant
+        } else {
+            base_speed
+        };
+        
         let rotation_speed = (outputs[1] - 0.5) * 2.0 * PI;
         
-        self.physics.rotation += rotation_speed * 0.1;
+        // Smoother rotation with energy consideration
+        let rotation_factor = if self.physics.energy < 0.3 { 0.15 } else { 0.1 };
+        self.physics.rotation += rotation_speed * rotation_factor;
+        
+        // Update velocity with energy-based inertia
         let target_velocity = na::Vector2::new(
             forward_speed * self.physics.rotation.cos(),
             forward_speed * self.physics.rotation.sin()
         );
-        self.physics.velocity = self.physics.velocity * 0.9 + target_velocity * 0.1;
+        
+        // More responsive movement when energy is high
+        let inertia_factor = if self.physics.energy > 1.0 { 0.15 } else { 0.1 };
+        self.physics.velocity = self.physics.velocity * (1.0 - inertia_factor) + target_velocity * inertia_factor;
     }
 
     fn can_reproduce_with(&self, other: &Creature) -> bool {
@@ -303,7 +326,7 @@ impl World {
         let mut dead_creatures = Vec::new();
         let mut reproduction_events = Vec::new();
         
-        // First pass: Update reproduction cooldowns and collect creature states
+        // First pass: Update reproduction cooldowns
         for creature in &mut self.creatures {
             if creature.reproduction_cooldown > 0.0 {
                 creature.reproduction_cooldown -= dt;
@@ -345,40 +368,48 @@ impl World {
                 creature.physics.position.y = new_pos.y;
             }
             
-            // Energy consumption
+            // Energy consumption - Reduced base consumption and movement cost
             let speed = creature.physics.velocity.norm();
-            let energy_cost = 0.1 * dt + speed * speed * 0.0001 * dt;
+            let energy_cost = 0.02 * dt + speed * speed * 0.00005 * dt;  // Reduced from 0.1 and 0.0001
             creature.physics.energy -= energy_cost;
             
-            // Check death condition
-            if creature.physics.energy <= 0.0 {
+            // Slowly regenerate energy when not moving
+            if speed < 1.0 {
+                creature.physics.energy += 0.01 * dt;  // Small energy regeneration when resting
+            }
+            
+            // Cap energy at maximum
+            creature.physics.energy = creature.physics.energy.min(1.5);  // Allow energy storage above 1.0
+            
+            // Check death condition - reduced minimum energy
+            if creature.physics.energy <= -0.2 {  // Give some buffer below 0
                 dead_creatures.push(i);
                 continue;
             }
 
-            // Handle reproduction
-            if creature.reproduction_cooldown <= 0.0 && creature.physics.energy >= 0.5 {
+            // Handle reproduction with adjusted costs
+            if creature.reproduction_cooldown <= 0.0 && creature.physics.energy >= 0.7 {  // Increased threshold
                 if let Some((mate_idx, _, _, _, _)) = nearby_creatures.iter()
                     .filter(|(_, pos, gender, cooldown, energy)| {
                         *gender != creature.gender &&
                         *cooldown <= 0.0 &&
-                        *energy >= 0.5 &&
+                        *energy >= 0.7 &&  // Increased threshold
                         na::distance(&creature.physics.position, pos) < 30.0
                     })
                     .next()
                 {
                     reproduction_events.push((i, *mate_idx));
-                    creature.reproduction_cooldown = 10.0;
-                    creature.physics.energy -= 0.3;
+                    creature.reproduction_cooldown = 15.0;  // Increased cooldown
+                    creature.physics.energy -= 0.2;  // Reduced from 0.3
                 }
             }
             
-            // Check for food consumption
+            // Check for food consumption with increased gains
             for (food_idx, food) in self.food_sources.iter().enumerate() {
                 let distance = na::distance(&creature.physics.position, food);
                 if distance < 20.0 {
                     food_to_remove.push(food_idx);
-                    creature.physics.energy += 0.5;
+                    creature.physics.energy += 0.8;  // Increased from 0.5
                     creature.fitness += 1.0;
                 }
             }
@@ -395,24 +426,36 @@ impl World {
             }
         }
 
-        // Remove dead creatures
+        // Remove dead creatures and add new ones
         dead_creatures.sort_unstable_by(|a, b| b.cmp(a));
         for idx in dead_creatures {
             self.creatures.remove(idx);
         }
 
-        // Add new creatures
-        self.creatures.extend(new_creatures);
+        // Add new creatures with initial energy boost
+        for mut child in new_creatures {
+            child.physics.energy = 1.0;  // Start with full energy
+            self.creatures.push(child);
+        }
         
-        // Handle food updates
-        // Remove eaten food and respawn
+        // Increase minimum population if needed
+        if self.creatures.len() < 10 {  // Maintain minimum population
+            let needed = 10 - self.creatures.len();
+            for _ in 0..needed {
+                let mut new_creature = Creature::new();
+                new_creature.physics.energy = 1.0;
+                self.creatures.push(new_creature);
+            }
+        }
+        
+        // Handle food updates with more frequent respawning
         food_to_remove.sort_unstable_by(|a, b| b.cmp(a));
         for food_idx in food_to_remove {
             self.food_sources.remove(food_idx);
         }
         
-        // Respawn food if needed
-        while self.food_sources.len() < 40 {
+        // Maintain higher minimum food count
+        while self.food_sources.len() < 50 {  // Increased from 40
             let mut rng = rand::thread_rng();
             self.food_sources.push(na::Point2::new(
                 rng.gen_range(0.0..800.0),
