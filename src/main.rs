@@ -8,6 +8,7 @@ mod food;
 use ggez::{Context, GameResult};
 use ggez::event::{self, EventHandler};
 use ggez::winit::event::VirtualKeyCode;
+use nalgebra as na;
 
 // Window constants
 const WINDOW_WIDTH: f32 = 800.0;
@@ -34,7 +35,12 @@ impl EventHandler for GameState {
             self.renderer.set_zoom((self.renderer.zoom * 0.95).max(0.2));  // Limit min zoom
         }
 
-        // Select creature with mouse click
+        // Toggle follow mode with F key
+        if ctx.keyboard.is_key_pressed(VirtualKeyCode::F) {
+            self.renderer.toggle_follow();
+        }
+
+        // Select creature with left mouse click
         if ctx.mouse.button_pressed(ggez::input::mouse::MouseButton::Left) {
             let mouse_pos = ctx.mouse.position();
             let world_mouse_pos = na::Point2::new(
@@ -42,6 +48,11 @@ impl EventHandler for GameState {
                 mouse_pos.y * self.renderer.zoom,
             );
             self.select_creature_at(world_mouse_pos);
+        }
+
+        // Deselect creature with right mouse click
+        if ctx.mouse.button_pressed(ggez::input::mouse::MouseButton::Right) {
+            self.renderer.select_creature(None);
         }
 
         if !self.paused {
@@ -73,16 +84,18 @@ impl GameState {
     }
 
     fn select_creature_at(&mut self, position: na::Point2<f32>) {
+        // Convert screen coordinates to world coordinates
+        let world_pos = na::Point2::new(
+            self.renderer.camera_offset.x + position.x / self.renderer.zoom,
+            self.renderer.camera_offset.y + position.y / self.renderer.zoom,
+        );
+
         let selected_index = self.world.creatures.iter()
             .enumerate()
-            .filter(|(_, creature)| na::distance(&creature.physics.position, &position) < 10.0)
+            .filter(|(_, creature)| na::distance(&creature.physics.position, &world_pos) < 10.0)
             .map(|(index, _)| index)
             .next();
         self.renderer.select_creature(selected_index);
-    }
-
-    fn deselect_creature(&mut self) {
-        self.renderer.select_creature(None);
     }
 }
 

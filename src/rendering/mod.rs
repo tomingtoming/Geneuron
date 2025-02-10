@@ -1,12 +1,14 @@
 use ggez::{Context, GameResult};
 use ggez::graphics::{self, Canvas, Color, DrawParam, Mesh, Text};
+use nalgebra::Point2;
 use crate::world::World;
-use crate::creature::Creature;
 
 pub struct Renderer {
     window_size: (f32, f32),
     pub zoom: f32,  // Make zoom field public
     selected_creature: Option<usize>,  // Add selected creature index
+    pub camera_offset: Point2<f32>,  // カメラの位置をパブリックに
+    following_selected: bool,         // 選択中の生物を追従するかどうか
 }
 
 impl Renderer {
@@ -15,6 +17,8 @@ impl Renderer {
             window_size: (width, height),
             zoom: 1.0,
             selected_creature: None,
+            camera_offset: Point2::new(0.0, 0.0),
+            following_selected: false,
         }
     }
 
@@ -28,15 +32,39 @@ impl Renderer {
 
     pub fn select_creature(&mut self, index: Option<usize>) {
         self.selected_creature = index;
+        if index.is_none() {
+            self.following_selected = false;
+        }
     }
 
-    pub fn render(&self, ctx: &mut Context, world: &World) -> GameResult {
+    pub fn toggle_follow(&mut self) {
+        if self.selected_creature.is_some() {
+            self.following_selected = !self.following_selected;
+        }
+    }
+
+    fn update_camera(&mut self, world: &World) {
+        if self.following_selected {
+            if let Some(selected_idx) = self.selected_creature {
+                if let Some(creature) = world.creatures.get(selected_idx) {
+                    // カメラを選択中の生物の位置に設定
+                    self.camera_offset = Point2::new(
+                        creature.physics.position.x - self.window_size.0 / (2.0 * self.zoom),
+                        creature.physics.position.y - self.window_size.1 / (2.0 * self.zoom)
+                    );
+                }
+            }
+        }
+    }
+
+    pub fn render(&mut self, ctx: &mut Context, world: &World) -> GameResult {
+        self.update_camera(world);
         let mut canvas = Canvas::from_frame(ctx, Color::BLACK);
         
-        // Apply zoom based on window size
+        // カメラオフセットを考慮したビューポート設定
         canvas.set_screen_coordinates(graphics::Rect::new(
-            0.0, 
-            0.0, 
+            self.camera_offset.x, 
+            self.camera_offset.y, 
             self.window_size.0 / self.zoom, 
             self.window_size.1 / self.zoom,
         ));
@@ -82,9 +110,10 @@ impl Renderer {
             )?;
             canvas.draw(&direction_line, DrawParam::default());
 
-            // Highlight selected creature
+            // Highlight and show details for selected creature
             if let Some(selected_index) = self.selected_creature {
                 if selected_index == i {
+                    // Highlight circle
                     let highlight_circle = Mesh::new_circle(
                         ctx,
                         graphics::DrawMode::stroke(2.0),
@@ -95,26 +124,55 @@ impl Renderer {
                     )?;
                     canvas.draw(&highlight_circle, DrawParam::default());
 
-                    // Display creature details
+                    // Display detailed creature information
                     let details = format!(
-                        "Energy: {:.2}\nAge: {:.2}\nFitness: {:.2}\nState: {:?}",
+                        "Energy: {:.2}\n\
+                         Age: {:.2}\n\
+                         Fitness: {:.2}\n\
+                         State: {:?}\n\
+                         Speed: {:.2}\n\
+                         Position: ({:.0}, {:.0})\n\
+                         Gender: {:?}",
                         creature.physics.energy,
                         creature.age,
                         creature.fitness,
                         creature.behavior_state,
+                        creature.physics.velocity.norm(),
+                        creature.physics.position.x,
+                        creature.physics.position.y,
+                        creature.gender,
                     );
+
+                    // 画面端に固定された位置に情報を表示
                     let details_text = Text::new(details);
                     canvas.draw(
                         &details_text,
                         DrawParam::default()
                             .color(Color::WHITE)
-                            .dest([creature.physics.position.x + 15.0, creature.physics.position.y - 30.0]),
+                            .dest([
+                                self.camera_offset.x + 10.0,
+                                self.camera_offset.y + 10.0
+                            ]),
                     );
+
+                    // 追従状態の表示
+                    if self.following_selected {
+                        let following_text = Text::new("Following");
+                        canvas.draw(
+                            &following_text,
+                            DrawParam::default()
+                                .color(Color::GREEN)
+                                .dest([
+                                    self.camera_offset.x + 10.0,
+                                    self.camera_offset.y + 120.0
+                                ]),
+                        );
+                    }
                 }
             }
         }
 
-        // Display simulation information
+        // Display simulation information (画面の右上に固定)
         let info_text = Text::new(format!(
             "Generation: {}\nCreatures: {}\nElapsed Time: {:.1}s\nFPS: {:.1}",
             world.generation,
@@ -126,7 +184,10 @@ impl Renderer {
             &info_text,
             DrawParam::default()
                 .color(Color::WHITE)
-                .dest([10.0, 10.0]),
+                .dest([
+                    self.camera_offset.x + self.window_size.0 / self.zoom - 150.0,
+                    self.camera_offset.y + 10.0
+                ]),
         );
 
         canvas.finish(ctx)?;

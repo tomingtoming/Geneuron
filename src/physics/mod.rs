@@ -1,5 +1,4 @@
 use nalgebra as na;
-use rand::prelude::*;
 
 #[derive(Clone)]
 pub struct PhysicsState {
@@ -54,7 +53,7 @@ impl PhysicsState {
         }
     }
 
-    pub fn apply_force(&mut self, force: na::Vector2<f32>, rotation_force: f32, dt: f32, energy_level: f32) {
+    pub fn apply_force(&mut self, force: na::Vector2<f32>, rotation_force: f32, _dt: f32, energy_level: f32) {
         // Base responsiveness on energy level
         let base_inertia = if energy_level > 1.0 {
             0.85  // More responsive when energy is high
@@ -77,7 +76,7 @@ impl PhysicsState {
         let new_velocity = self.velocity * base_inertia + force * (1.0 - base_inertia);
         let current_speed = new_velocity.norm();
         
-        if current_speed > max_speed {
+        if current_speed > max_speed {  // 括弧を削除
             self.velocity = new_velocity * (max_speed / current_speed);
         } else {
             self.velocity = new_velocity;

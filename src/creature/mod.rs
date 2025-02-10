@@ -6,7 +6,7 @@ use std::f32::consts::PI;
 use crate::neural::Neural;
 use crate::physics::PhysicsState;
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]  // Add Debug trait
 pub enum Gender {
     Male,
     Female,
@@ -27,7 +27,7 @@ pub struct Creature {
     state_transition_timer: f32,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]  // Add Debug trait
 pub enum BehaviorState {
     Exploring,
     Feeding,
