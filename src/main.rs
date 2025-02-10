@@ -26,12 +26,22 @@ impl EventHandler for GameState {
             self.paused = !self.paused;
         }
 
-        // Zoom control
+        // Smooth zoom control
         if ctx.keyboard.is_key_pressed(VirtualKeyCode::Z) {
-            self.renderer.set_zoom(self.renderer.zoom * 1.05);
+            self.renderer.set_zoom((self.renderer.zoom * 1.05).min(5.0));  // Limit max zoom
         }
         if ctx.keyboard.is_key_pressed(VirtualKeyCode::X) {
-            self.renderer.set_zoom(self.renderer.zoom * 0.95);
+            self.renderer.set_zoom((self.renderer.zoom * 0.95).max(0.2));  // Limit min zoom
+        }
+
+        // Select creature with mouse click
+        if ctx.mouse.button_pressed(ggez::input::mouse::MouseButton::Left) {
+            let mouse_pos = ctx.mouse.position();
+            let world_mouse_pos = na::Point2::new(
+                mouse_pos.x * self.renderer.zoom,
+                mouse_pos.y * self.renderer.zoom,
+            );
+            self.select_creature_at(world_mouse_pos);
         }
 
         if !self.paused {
@@ -60,6 +70,19 @@ impl GameState {
             renderer: rendering::Renderer::new(width, height),
             paused: false,
         })
+    }
+
+    fn select_creature_at(&mut self, position: na::Point2<f32>) {
+        let selected_index = self.world.creatures.iter()
+            .enumerate()
+            .filter(|(_, creature)| na::distance(&creature.physics.position, &position) < 10.0)
+            .map(|(index, _)| index)
+            .next();
+        self.renderer.select_creature(selected_index);
+    }
+
+    fn deselect_creature(&mut self) {
+        self.renderer.select_creature(None);
     }
 }
 

@@ -1,10 +1,12 @@
 use ggez::{Context, GameResult};
 use ggez::graphics::{self, Canvas, Color, DrawParam, Mesh, Text};
 use crate::world::World;
+use crate::creature::Creature;
 
 pub struct Renderer {
     window_size: (f32, f32),
     pub zoom: f32,  // Make zoom field public
+    selected_creature: Option<usize>,  // Add selected creature index
 }
 
 impl Renderer {
@@ -12,6 +14,7 @@ impl Renderer {
         Renderer {
             window_size: (width, height),
             zoom: 1.0,
+            selected_creature: None,
         }
     }
 
@@ -21,6 +24,10 @@ impl Renderer {
 
     pub fn resize(&mut self, width: f32, height: f32) {
         self.window_size = (width, height);
+    }
+
+    pub fn select_creature(&mut self, index: Option<usize>) {
+        self.selected_creature = index;
     }
 
     pub fn render(&self, ctx: &mut Context, world: &World) -> GameResult {
@@ -48,7 +55,7 @@ impl Renderer {
         }
 
         // Draw creatures
-        for creature in &world.creatures {
+        for (i, creature) in world.creatures.iter().enumerate() {
             // Creature body
             let body = Mesh::new_circle(
                 ctx,
@@ -74,6 +81,37 @@ impl Renderer {
                 creature.mode_color,
             )?;
             canvas.draw(&direction_line, DrawParam::default());
+
+            // Highlight selected creature
+            if let Some(selected_index) = self.selected_creature {
+                if selected_index == i {
+                    let highlight_circle = Mesh::new_circle(
+                        ctx,
+                        graphics::DrawMode::stroke(2.0),
+                        [creature.physics.position.x, creature.physics.position.y],
+                        12.0,
+                        0.1,
+                        Color::YELLOW,
+                    )?;
+                    canvas.draw(&highlight_circle, DrawParam::default());
+
+                    // Display creature details
+                    let details = format!(
+                        "Energy: {:.2}\nAge: {:.2}\nFitness: {:.2}\nState: {:?}",
+                        creature.physics.energy,
+                        creature.age,
+                        creature.fitness,
+                        creature.behavior_state,
+                    );
+                    let details_text = Text::new(details);
+                    canvas.draw(
+                        &details_text,
+                        DrawParam::default()
+                            .color(Color::WHITE)
+                            .dest([creature.physics.position.x + 15.0, creature.physics.position.y - 30.0]),
+                    );
+                }
+            }
         }
 
         // Display simulation information
