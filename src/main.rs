@@ -10,6 +10,7 @@ use std::f32::consts::PI;
 const WINDOW_WIDTH: f32 = 800.0;
 const WINDOW_HEIGHT: f32 = 600.0;
 
+#[allow(dead_code)]  // Add attribute to suppress warning
 // Neural network trait definition
 trait NeuralNetwork {
     fn process(&self, inputs: &[f32]) -> Vec<f32>;
@@ -246,15 +247,6 @@ impl Creature {
         };
     }
 
-    fn can_reproduce_with(&self, other: &Creature) -> bool {
-        self.gender != other.gender &&
-        self.reproduction_cooldown <= 0.0 &&
-        other.reproduction_cooldown <= 0.0 &&
-        self.physics.energy >= 0.5 &&
-        other.physics.energy >= 0.5 &&
-        na::distance(&self.physics.position, &other.physics.position) < 30.0
-    }
-
     fn reproduce_with(&self, other: &Creature) -> Creature {
         let mut child = Creature::new();
         let mut rng = rand::thread_rng();
@@ -384,16 +376,17 @@ impl World {
         let mut dead_creatures = Vec::new();
         let mut reproduction_events = Vec::new();
         
-        // First pass: Update reproduction cooldowns
+        // First pass: Update reproduction cooldowns and collect creature states
         for creature in &mut self.creatures {
             if creature.reproduction_cooldown > 0.0 {
                 creature.reproduction_cooldown -= dt;
             }
         }
 
-        // Second pass: Main update loop
-        for i in 0..self.creatures.len() {
-            // Create nearby creatures data without borrowing the whole vector
+        // Second pass: Main update loop using indexed iteration
+        let creature_count = self.creatures.len();
+        for i in 0..creature_count {
+            // Create nearby creatures data
             let nearby_creatures: Vec<(usize, na::Point2<f32>, Gender, f32, f32)> = self.creatures.iter().enumerate()
                 .filter(|(j, _)| *j != i)
                 .map(|(j, c)| (j, c.physics.position, c.gender.clone(), c.reproduction_cooldown, c.physics.energy))
@@ -401,8 +394,6 @@ impl World {
 
             // Get mutable reference to current creature
             let creature = &mut self.creatures[i];
-            
-            // Update age
             creature.age += dt;
             
             // Neural network decision making
@@ -426,68 +417,71 @@ impl World {
                 creature.physics.position.y = new_pos.y;
             }
             
-            // Energy consumption - Reduced base consumption and movement cost
+            // Energy management
             let speed = creature.physics.velocity.norm();
-            let energy_cost = 0.02 * dt + speed * speed * 0.00005 * dt;  // Reduced from 0.1 and 0.0001
+            let energy_cost = 0.02 * dt + speed * speed * 0.00005 * dt;
             creature.physics.energy -= energy_cost;
             
-            // Slowly regenerate energy when not moving
             if speed < 1.0 {
-                creature.physics.energy += 0.01 * dt;  // Small energy regeneration when resting
+                creature.physics.energy += 0.01 * dt;
             }
             
-            // Cap energy at maximum
-            creature.physics.energy = creature.physics.energy.min(1.5);  // Allow energy storage above 1.0
+            creature.physics.energy = creature.physics.energy.min(1.5);
             
-            // Check death condition - reduced minimum energy
-            if creature.physics.energy <= -0.2 {  // Give some buffer below 0
+            // Check death condition
+            if creature.physics.energy <= -0.2 {
                 dead_creatures.push(i);
                 continue;
             }
 
-            // Handle reproduction with adjusted costs
-            if creature.reproduction_cooldown <= 0.0 && creature.physics.energy >= 0.7 {  // Increased threshold
+            // Handle reproduction
+            if creature.reproduction_cooldown <= 0.0 && creature.physics.energy >= 0.7 {
                 if let Some((mate_idx, _, _, _, _)) = nearby_creatures.iter()
                     .filter(|(_, pos, gender, cooldown, energy)| {
                         *gender != creature.gender &&
                         *cooldown <= 0.0 &&
-                        *energy >= 0.7 &&  // Increased threshold
+                        *energy >= 0.7 &&
                         na::distance(&creature.physics.position, pos) < 30.0
                     })
                     .next()
                 {
                     reproduction_events.push((i, *mate_idx));
-                    creature.reproduction_cooldown = 15.0;  // Increased cooldown
-                    creature.physics.energy -= 0.2;  // Reduced from 0.3
+                    creature.reproduction_cooldown = 15.0;
+                    creature.physics.energy -= 0.2;
                 }
             }
             
-            // Check for food consumption with increased gains
+            // Food consumption
+            let mut creature_food_indices = Vec::new();
             for (food_idx, food) in self.food_sources.iter().enumerate() {
                 let distance = na::distance(&creature.physics.position, food);
                 if distance < 20.0 {
-                    food_to_remove.push(food_idx);
-                    creature.physics.energy += 0.8;  // Increased from 0.5
+                    creature_food_indices.push(food_idx);
+                    creature.physics.energy += 0.8;
                     creature.fitness += 1.0;
                 }
             }
+            food_to_remove.extend(creature_food_indices);
         }
-        
-        // Handle reproduction events before removing dead creatures
+
+        // Handle reproduction events
         let mut new_creatures = Vec::new();
         for (parent1_idx, parent2_idx) in reproduction_events {
+            // Double-check indices are still valid
             if parent1_idx < self.creatures.len() && parent2_idx < self.creatures.len() {
-                let parent1 = &self.creatures[parent1_idx];
-                let parent2 = &self.creatures[parent2_idx];
-                let child = parent1.reproduce_with(parent2);
+                // Clone parents before reproduction to avoid borrow checker issues
+                let parent1 = self.creatures[parent1_idx].clone();
+                let parent2 = self.creatures[parent2_idx].clone();
+                let child = parent1.reproduce_with(&parent2);
                 new_creatures.push(child);
             }
         }
 
-        // Remove dead creatures from highest index to lowest
+        // Remove dead creatures (from highest index to lowest)
         dead_creatures.sort_unstable_by(|a, b| b.cmp(a));
         for &idx in &dead_creatures {
-            if idx < self.creatures.len() {  // Safety check
+            // Only remove if index is still valid
+            if idx < self.creatures.len() {
                 self.creatures.remove(idx);
             }
         }
@@ -495,8 +489,8 @@ impl World {
         // Add new creatures
         self.creatures.extend(new_creatures);
         
-        // Increase minimum population if needed
-        if self.creatures.len() < 10 {  // Maintain minimum population
+        // Maintain minimum population
+        if self.creatures.len() < 10 {
             let needed = 10 - self.creatures.len();
             for _ in 0..needed {
                 let mut new_creature = Creature::new();
@@ -505,14 +499,20 @@ impl World {
             }
         }
         
-        // Handle food updates with more frequent respawning
+        // Handle food updates
+        // Remove duplicates and sort in descending order
         food_to_remove.sort_unstable_by(|a, b| b.cmp(a));
-        for food_idx in food_to_remove {
-            self.food_sources.remove(food_idx);
+        food_to_remove.dedup();
+        
+        // Remove food items from highest index to lowest
+        for &idx in food_to_remove.iter() {
+            if idx < self.food_sources.len() {
+                self.food_sources.remove(idx);
+            }
         }
         
-        // Maintain higher minimum food count
-        while self.food_sources.len() < 50 {  // Increased from 40
+        // Respawn food
+        while self.food_sources.len() < 50 {
             let mut rng = rand::thread_rng();
             self.food_sources.push(na::Point2::new(
                 rng.gen_range(0.0..800.0),
