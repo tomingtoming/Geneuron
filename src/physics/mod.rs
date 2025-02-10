@@ -7,6 +7,7 @@ pub struct PhysicsState {
     pub velocity: na::Vector2<f32>,
     pub rotation: f32,
     pub energy: f32,
+    rotation_momentum: f32,  // Add rotation momentum for smoother turns
 }
 
 impl PhysicsState {
@@ -16,16 +17,28 @@ impl PhysicsState {
             velocity,
             rotation,
             energy,
+            rotation_momentum: 0.0,
         }
     }
 
     pub fn update(&mut self, dt: f32, bounds: (f32, f32)) {
+        // Apply momentum to rotation
+        self.rotation += self.rotation_momentum * dt;
+        
+        // Decay rotation momentum
+        self.rotation_momentum *= 0.95;
+        
+        // Normalize rotation to [0, 2π]
+        self.rotation = self.rotation.rem_euclid(2.0 * std::f32::consts::PI);
+        
         // Update position with current velocity
         let new_pos = self.position + self.velocity * dt;
         
-        // Boundary handling with smooth bounce
+        // Improved boundary handling with smooth bounce
         if new_pos.x < 0.0 || new_pos.x > bounds.0 {
             self.velocity.x *= -0.8;
+            // Add slight rotation on bounce
+            self.rotation_momentum += if self.velocity.x > 0.0 { -0.2 } else { 0.2 };
             self.position.x = new_pos.x.clamp(0.0, bounds.0);
         } else {
             self.position.x = new_pos.x;
@@ -33,18 +46,20 @@ impl PhysicsState {
         
         if new_pos.y < 0.0 || new_pos.y > bounds.1 {
             self.velocity.y *= -0.8;
+            // Add slight rotation on bounce
+            self.rotation_momentum += if self.velocity.y > 0.0 { 0.2 } else { -0.2 };
             self.position.y = new_pos.y.clamp(0.0, bounds.1);
         } else {
             self.position.y = new_pos.y;
         }
     }
 
-    pub fn apply_force(&mut self, force: na::Vector2<f32>, rotation_force: f32, _dt: f32, energy_level: f32) {
+    pub fn apply_force(&mut self, force: na::Vector2<f32>, rotation_force: f32, dt: f32, energy_level: f32) {
         // Base responsiveness on energy level
         let base_inertia = if energy_level > 1.0 {
             0.85  // More responsive when energy is high
         } else if energy_level < 0.3 {
-            0.95  // Very sluggish when energy is low
+            0.95  // Very sluggish when low energy
         } else {
             0.9   // Normal responsiveness
         };
@@ -68,32 +83,35 @@ impl PhysicsState {
             self.velocity = new_velocity;
         }
 
-        // Apply rotation with smooth damping
-        let rotation_damping = if energy_level < 0.3 {
-            0.95  // Strong damping when low energy
-        } else if energy_level < 0.5 {
-            0.9   // Moderate damping
+        // Apply rotation force to momentum instead of directly to rotation
+        let max_rotation_momentum = if energy_level < 0.3 {
+            2.0  // Low energy, low max rotation
+        } else if energy_level > 1.0 {
+            6.0  // High energy, high max rotation
         } else {
-            0.85  // Normal damping
+            4.0  // Normal max rotation
         };
 
-        // Add slight randomness to prevent perfect rotations
-        let mut rng = rand::thread_rng();
-        let random_factor = 1.0 + rng.gen_range(-0.01..0.01);
-        
-        self.rotation += rotation_force * (1.0 - rotation_damping) * random_factor;
-        
-        // Normalize rotation to [0, 2π]
-        self.rotation = self.rotation.rem_euclid(2.0 * std::f32::consts::PI);
+        self.rotation_momentum += rotation_force;
+        self.rotation_momentum = self.rotation_momentum.clamp(-max_rotation_momentum, max_rotation_momentum);
     }
 
     pub fn calculate_energy_cost(&self, dt: f32) -> f32 {
         let speed = self.velocity.norm();
-        let rotation_cost = self.rotation.abs() * 0.001;  // Small cost for rotation
+        let rotation_cost = self.rotation_momentum.abs() * 0.001;  // Small cost for rotation
         
-        // Base metabolism cost plus movement costs
-        0.01 * dt +  // Base metabolism
-        speed * speed * 0.00005 * dt +  // Movement cost
+        // Progressive energy cost based on speed
+        let speed_cost = if speed < 10.0 {
+            speed * 0.00001  // Very efficient at low speeds
+        } else if speed < 50.0 {
+            0.0001 * speed  // Linear cost at medium speeds
+        } else {
+            0.0002 * speed  // Quadratic cost at high speeds
+        };
+        
+        // Base metabolism plus movement costs
+        0.005 * dt +  // Reduced base metabolism
+        speed_cost * dt +  // Movement cost
         rotation_cost * dt  // Rotation cost
     }
 
@@ -105,7 +123,13 @@ impl PhysicsState {
         let direction = target - self.position;
         let distance = direction.norm();
         let target_angle = direction.y.atan2(direction.x);
-        let angle_diff = (target_angle - self.rotation).rem_euclid(2.0 * std::f32::consts::PI);
+        let mut angle_diff = (target_angle - self.rotation).rem_euclid(2.0 * std::f32::consts::PI);
+        
+        // Normalize to [-PI, PI] for shortest turn
+        if angle_diff > std::f32::consts::PI {
+            angle_diff -= 2.0 * std::f32::consts::PI;
+        }
+        
         (distance, angle_diff)
     }
 }

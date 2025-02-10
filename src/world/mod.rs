@@ -1,4 +1,5 @@
 use nalgebra as na;
+use rand::prelude::*;
 
 use crate::creature::{Creature, Gender};
 use crate::neural::FeedForwardNetwork;
@@ -10,15 +11,17 @@ pub struct World {
     pub elapsed_time: f32,
     pub food_manager: FoodManager,
     world_bounds: (f32, f32),
+    repopulation_timer: f32,
+    population_check_interval: f32,
 }
 
 impl World {
     pub fn new(width: f32, height: f32) -> Self {
         let world_bounds = (width, height);
 
-        // Create initial population with updated neural network size (9 inputs)
+        // Create initial population
         let creatures = (0..50).map(|_| {
-            let brain = Box::new(FeedForwardNetwork::new(9, 4));  // Updated from 7 to 9 inputs
+            let brain = Box::new(FeedForwardNetwork::new(9, 4));
             Creature::new(brain)
         }).collect();
 
@@ -31,6 +34,8 @@ impl World {
             elapsed_time: 0.0,
             food_manager,
             world_bounds,
+            repopulation_timer: 0.0,
+            population_check_interval: 5.0,  // Check population every 5 seconds
         }
     }
 
@@ -63,25 +68,31 @@ impl World {
                 .collect();
             creature.update(&food_positions, &nearby_creatures, dt, self.world_bounds);
             
-            // Energy consumption
+            // Energy consumption with adjusted rates
             let energy_cost = creature.physics.calculate_energy_cost(dt);
             creature.physics.energy -= energy_cost;
             
-            // Energy regeneration when stationary
+            // Gradual energy regeneration when stationary
             if creature.physics.velocity.norm() < 1.0 {
-                creature.physics.energy += 0.01 * dt;
+                let rest_bonus = if nearby_creatures.iter().any(|(_, pos, ..)| 
+                    na::distance(pos, &creature.physics.position) < 50.0) {
+                    0.015 * dt  // Extra regeneration when resting near others
+                } else {
+                    0.01 * dt   // Normal regeneration when resting alone
+                };
+                creature.physics.energy += rest_bonus;
             }
             
             // Cap energy
             creature.physics.energy = creature.physics.energy.min(1.5);
             
-            // Check death condition
+            // Check death condition with grace period
             if creature.physics.energy <= -0.2 {
                 dead_creatures.push(i);
                 continue;
             }
 
-            // Check reproduction
+            // Check reproduction with improved conditions
             if creature.reproduction_cooldown <= 0.0 && creature.physics.energy >= 0.7 {
                 if let Some((mate_idx, _, _, _, _)) = nearby_creatures.iter()
                     .filter(|other| creature.can_reproduce_with(other))
@@ -93,7 +104,7 @@ impl World {
                 }
             }
             
-            // Check food consumption
+            // Check food consumption with improved positioning
             let nearby_foods = self.food_manager.find_nearby_food(&creature.physics.position, 20.0);
             for (food_idx, food) in nearby_foods {
                 if !food_to_remove.contains(&food_idx) {
@@ -126,18 +137,38 @@ impl World {
         // Add new creatures
         self.creatures.extend(new_creatures);
         
-        // Maintain minimum population
-        if self.creatures.len() < 10 {
-            let needed = 10 - self.creatures.len();
-            for _ in 0..needed {
-                let brain = Box::new(FeedForwardNetwork::new(9, 4));  // Updated from 7 to 9 inputs
-                let mut new_creature = Creature::new(brain);
-                new_creature.physics.energy = 1.0;
-                self.creatures.push(new_creature);
+        // Population management with timer
+        self.repopulation_timer += dt;
+        if self.repopulation_timer >= self.population_check_interval {
+            self.repopulation_timer = 0.0;
+            
+            // Only add new creatures if population is critically low
+            if self.creatures.len() < 10 {
+                let current_pop = self.creatures.len();
+                let max_new = (15 - current_pop).min(3);  // Add up to 3 at a time
+                
+                for _ in 0..max_new {
+                    let brain = Box::new(FeedForwardNetwork::new(9, 4));
+                    let mut new_creature = Creature::new(brain);
+                    new_creature.physics.energy = 1.0;
+                    
+                    // Try to place new creatures near existing ones if possible
+                    if let Some(existing) = self.creatures.choose(&mut thread_rng()) {
+                        let mut rng = thread_rng();
+                        new_creature.physics.position = na::Point2::new(
+                            (existing.physics.position.x + rng.gen_range(-50.0..50.0))
+                                .clamp(0.0, self.world_bounds.0),
+                            (existing.physics.position.y + rng.gen_range(-50.0..50.0))
+                                .clamp(0.0, self.world_bounds.1)
+                        );
+                    }
+                    
+                    self.creatures.push(new_creature);
+                }
             }
         }
         
-        // Remove eaten food
+        // Handle food updates
         food_to_remove.sort_unstable_by(|a, b| b.cmp(a));
         food_to_remove.dedup();
         for &idx in food_to_remove.iter().rev() {
@@ -148,5 +179,6 @@ impl World {
         self.food_manager.update();
         
         self.elapsed_time += dt;
+        self.generation = (self.elapsed_time / 60.0) as usize + 1;  // New generation every minute
     }
 }
