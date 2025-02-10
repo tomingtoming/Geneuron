@@ -70,20 +70,20 @@ impl Neural for FeedForwardNetwork {
 
         // Process hidden layer
         let mut hidden = vec![0.0; self.hidden_size];
-        for i in 0..self.hidden_size {
-            for j in 0..self.input_size {
-                hidden[i] += inputs[j] * self.hidden_weights[i * self.input_size + j];
+        for (i, h) in hidden.iter_mut().enumerate() {
+            for (j, input) in inputs.iter().enumerate() {
+                *h += input * self.hidden_weights[i * self.input_size + j];
             }
-            hidden[i] = (hidden[i] * PI).tanh();
+            *h = ((*h) * PI).tanh();
         }
 
         // Process output layer
         let mut outputs = vec![0.0; self.output_size];
-        for i in 0..self.output_size {
-            for j in 0..self.hidden_size {
-                outputs[i] += hidden[j] * self.output_weights[i * self.hidden_size + j];
+        for (i, output) in outputs.iter_mut().enumerate() {
+            for (j, h) in hidden.iter().enumerate() {
+                *output += h * self.output_weights[i * self.hidden_size + j];
             }
-            outputs[i] = (outputs[i] * PI).tanh();
+            *output = ((*output) * PI).tanh();
         }
 
         outputs

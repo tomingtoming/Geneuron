@@ -52,10 +52,8 @@ impl PhysicsBody {
         self.rotation += wrapped_diff * 0.1;
 
         // Apply movement in direction of rotation
-        self.velocity += na::Vector2::new(
-            self.rotation.cos() * speed,
-            self.rotation.sin() * speed,
-        ) * 0.1;
+        self.velocity +=
+            na::Vector2::new(self.rotation.cos() * speed, self.rotation.sin() * speed) * 0.1;
     }
 
     pub fn distance_to(&self, other: &na::Point2<f32>, bounds: (f32, f32)) -> f32 {
@@ -69,7 +67,7 @@ impl PhysicsBody {
     pub fn direction_to(&self, other: &na::Point2<f32>, bounds: (f32, f32)) -> (f32, f32) {
         let dx = other.x - self.position.x;
         let dy = other.y - self.position.y;
-        
+
         let wrapped_dx = if dx.abs() > bounds.0 / 2.0 {
             if dx > 0.0 {
                 dx - bounds.0

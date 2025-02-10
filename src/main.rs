@@ -1,9 +1,9 @@
-mod neural;
 mod creature;
-mod physics;
-mod world;
-mod rendering;
 mod food;
+mod neural;
+mod physics;
+mod rendering;
+mod world;
 
 use macroquad::prelude::*;
 use nalgebra as na;
@@ -13,8 +13,8 @@ const WINDOW_WIDTH: f32 = 800.0;
 const WINDOW_HEIGHT: f32 = 600.0;
 
 // World constants
-const WORLD_WIDTH: f32 = 2400.0;  // ウィンドウの3倍
-const WORLD_HEIGHT: f32 = 1800.0;  // ウィンドウの3倍
+const WORLD_WIDTH: f32 = 2400.0; // ウィンドウの3倍
+const WORLD_HEIGHT: f32 = 1800.0; // ウィンドウの3倍
 
 struct GameState {
     world: world::World,
@@ -39,10 +39,10 @@ impl GameState {
 
         // Smooth zoom control
         if is_key_down(KeyCode::Z) {
-            self.renderer.set_zoom((self.renderer.zoom * 1.05).min(5.0));  // Limit max zoom
+            self.renderer.set_zoom((self.renderer.zoom * 1.05).min(5.0)); // Limit max zoom
         }
         if is_key_down(KeyCode::X) {
-            self.renderer.set_zoom((self.renderer.zoom * 0.95).max(0.2));  // Limit min zoom
+            self.renderer.set_zoom((self.renderer.zoom * 0.95).max(0.2)); // Limit min zoom
         }
 
         // Toggle follow mode with F key
@@ -78,11 +78,17 @@ impl GameState {
         let world_y = self.renderer.camera_offset.y + position.y / self.renderer.zoom;
         let world_pos = na::Point2::new(world_x, world_y);
 
-        let selected_index = self.world.creatures.iter()
+        let selected_index = self
+            .world
+            .creatures
+            .iter()
             .enumerate()
             .filter(|(_, creature)| {
                 // トーラス構造を考慮した距離計算
-                creature.physics.distance_to(&world_pos, self.world.world_bounds) < 20.0  // 選択範囲を広げる
+                creature
+                    .physics
+                    .distance_to(&world_pos, self.world.world_bounds)
+                    < 20.0 // 選択範囲を広げる
             })
             .map(|(index, _)| index)
             .next();

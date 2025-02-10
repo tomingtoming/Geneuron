@@ -1,7 +1,7 @@
-use macroquad::prelude::*;
-use nalgebra as na;
 use ::rand::prelude::*;
 use ::rand::thread_rng;
+use macroquad::prelude::*;
+use nalgebra as na;
 
 #[derive(Clone)]
 pub struct Food {
@@ -17,10 +17,6 @@ impl Food {
             size: 5.0,
             color: GREEN,
         }
-    }
-
-    pub fn distance_to(&self, point: &na::Point2<f32>) -> f32 {
-        na::distance(&self.position, point)
     }
 }
 
@@ -101,6 +97,7 @@ impl FoodManager {
             .collect()
     }
 
+    #[allow(dead_code)]
     pub fn resize(&mut self, width: f32, height: f32) {
         // Scale food positions to new bounds
         for food in &mut self.foods {

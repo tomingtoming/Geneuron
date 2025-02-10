@@ -193,7 +193,10 @@ impl Renderer {
 
         // Set camera
         set_camera(&Camera2D {
-            zoom: vec2(2.0 / self.window_size.0 * self.zoom, 2.0 / self.window_size.1 * self.zoom),
+            zoom: vec2(
+                2.0 / self.window_size.0 * self.zoom,
+                2.0 / self.window_size.1 * self.zoom,
+            ),
             target: vec2(
                 self.camera_offset.x + self.window_size.0 / (2.0 * self.zoom),
                 self.camera_offset.y + self.window_size.1 / (2.0 * self.zoom),

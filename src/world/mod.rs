@@ -1,6 +1,6 @@
-use nalgebra as na;
 use ::rand::prelude::*;
 use ::rand::thread_rng;
+use nalgebra as na;
 
 use crate::creature::{Creature, Gender};
 use crate::food::FoodManager;
@@ -46,16 +46,29 @@ impl World {
         // First pass: Gather all information
         for i in 0..self.creatures.len() {
             let creature = &self.creatures[i];
-            let nearby_foods = self.food_manager.find_nearby_food(&creature.physics.position, 200.0);
-            
-            let nearby_creatures: Vec<(usize, na::Point2<f32>, Gender, f32, f32)> = self.creatures
+            let nearby_foods = self
+                .food_manager
+                .find_nearby_food(&creature.physics.position, 200.0);
+
+            let nearby_creatures: Vec<(usize, na::Point2<f32>, Gender, f32, f32)> = self
+                .creatures
                 .iter()
                 .enumerate()
                 .filter(|(j, other)| {
-                    *j != i && creature.physics.distance_to(&other.physics.position, self.world_bounds) < 100.0
+                    *j != i
+                        && creature
+                            .physics
+                            .distance_to(&other.physics.position, self.world_bounds)
+                            < 100.0
                 })
                 .map(|(j, other)| {
-                    (j, other.physics.position, other.gender, other.physics.energy, other.fitness)
+                    (
+                        j,
+                        other.physics.position,
+                        other.gender,
+                        other.physics.energy,
+                        other.fitness,
+                    )
                 })
                 .collect();
 
@@ -65,10 +78,8 @@ impl World {
         // Second pass: Apply updates
         for (i, nearby_foods, nearby_creatures) in creature_updates {
             let creature = &mut self.creatures[i];
-            let food_positions: Vec<na::Point2<f32>> = nearby_foods
-                .iter()
-                .map(|(_, food)| food.position)
-                .collect();
+            let food_positions: Vec<na::Point2<f32>> =
+                nearby_foods.iter().map(|(_, food)| food.position).collect();
 
             // Update creature
             creature.update(dt, &food_positions, &nearby_creatures, self.world_bounds);
@@ -132,6 +143,7 @@ impl World {
         self.food_manager.update_positions();
     }
 
+    #[allow(dead_code)]
     pub fn resize(&mut self, width: f32, height: f32) {
         let old_bounds = self.world_bounds;
         self.world_bounds = (width, height);

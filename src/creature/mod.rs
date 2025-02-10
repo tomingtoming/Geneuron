@@ -1,7 +1,7 @@
-use macroquad::prelude::*;
-use nalgebra as na;
 use ::rand::prelude::*;
 use ::rand::thread_rng;
+use macroquad::prelude::*;
+use nalgebra as na;
 
 use crate::neural::{FeedForwardNetwork, Neural};
 use crate::physics::PhysicsBody;
@@ -30,14 +30,17 @@ pub enum BehaviorState {
     Wandering,
     Seeking,
     Resting,
-    Fleeing,
     Mating,
 }
 
 impl Creature {
     pub fn new(position: na::Point2<f32>) -> Self {
         let mut rng = thread_rng();
-        let gender = if rng.gen::<bool>() { Gender::Male } else { Gender::Female };
+        let gender = if rng.gen::<bool>() {
+            Gender::Male
+        } else {
+            Gender::Female
+        };
         let color = match gender {
             Gender::Male => BLUE,
             Gender::Female => PINK,
@@ -63,7 +66,10 @@ impl Creature {
         child
     }
 
-    pub fn can_reproduce_with(&self, other_data: &(usize, na::Point2<f32>, Gender, f32, f32)) -> bool {
+    pub fn can_reproduce_with(
+        &self,
+        other_data: &(usize, na::Point2<f32>, Gender, f32, f32),
+    ) -> bool {
         let (_, _, other_gender, other_energy, _) = *other_data;
         self.reproduction_cooldown <= 0.0
             && self.physics.energy >= 0.7
@@ -71,7 +77,13 @@ impl Creature {
             && other_energy >= 0.7
     }
 
-    pub fn update(&mut self, dt: f32, nearby_food: &[na::Point2<f32>], nearby_creatures: &[(usize, na::Point2<f32>, Gender, f32, f32)], bounds: (f32, f32)) {
+    pub fn update(
+        &mut self,
+        dt: f32,
+        nearby_food: &[na::Point2<f32>],
+        nearby_creatures: &[(usize, na::Point2<f32>, Gender, f32, f32)],
+        bounds: (f32, f32),
+    ) {
         self.age += dt;
         self.reproduction_cooldown = (self.reproduction_cooldown - dt).max(0.0);
 
@@ -114,7 +126,12 @@ impl Creature {
         };
     }
 
-    fn think(&mut self, nearby_food: &[na::Point2<f32>], nearby_creatures: &[(usize, na::Point2<f32>, Gender, f32, f32)], bounds: (f32, f32)) {
+    fn think(
+        &mut self,
+        nearby_food: &[na::Point2<f32>],
+        nearby_creatures: &[(usize, na::Point2<f32>, Gender, f32, f32)],
+        bounds: (f32, f32),
+    ) {
         // Prepare neural network inputs
         let mut inputs = vec![
             self.physics.energy,
@@ -142,10 +159,9 @@ impl Creature {
         }
 
         // Find nearest potential mate
-        let nearest_mate = nearby_creatures.iter()
-            .filter(|(_, _, gender, energy, _)| {
-                *gender != self.gender && *energy >= 0.7
-            })
+        let nearest_mate = nearby_creatures
+            .iter()
+            .filter(|(_, _, gender, energy, _)| *gender != self.gender && *energy >= 0.7)
             .min_by(|a, b| {
                 let dist_a = self.physics.distance_to(&a.1, bounds);
                 let dist_b = self.physics.distance_to(&b.1, bounds);
