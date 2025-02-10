@@ -143,10 +143,11 @@ impl Renderer {
                         creature.gender,
                     );
 
-                    // 画面端に固定された位置に情報を表示
-                    let details_text = Text::new(details).set_scale(PxScale::from(24.0));  // テキストサイズを大きく
+                    // テキストの作成と設定を分離
+                    let mut text = Text::new(details);
+                    let details_text = text.set_scale(PxScale::from(24.0));
                     canvas.draw(
-                        &details_text,
+                        details_text,
                         DrawParam::default()
                             .color(Color::WHITE)
                             .dest([
@@ -155,11 +156,12 @@ impl Renderer {
                             ]),
                     );
 
-                    // 追従状態の表示
+                    // 追従状態の表示（同様に分離）
                     if self.following_selected {
-                        let following_text = Text::new("Following").set_scale(PxScale::from(24.0));  // テキストサイズを大きく
+                        let mut text = Text::new("Following");
+                        let following_text = text.set_scale(PxScale::from(24.0));
                         canvas.draw(
-                            &following_text,
+                            following_text,
                             DrawParam::default()
                                 .color(Color::GREEN)
                                 .dest([
@@ -172,23 +174,78 @@ impl Renderer {
             }
         }
 
-        // Display simulation information (画面の右上に固定)
-        let info_text = Text::new(format!(
-            "Generation: {}\nCreatures: {}\nElapsed Time: {:.1}s\nFPS: {:.1}",
+        // ステータス情報（左上）
+        let mut status = Text::new(format!(
+            "Generation: {}\nPopulation: {}\nTime: {:.1}s\nFPS: {:.1}",
             world.generation,
             world.creatures.len(),
             world.elapsed_time,
             ctx.time.fps(),
-        )).set_scale(PxScale::from(24.0));  // テキストサイズを大きく
+        ));
+        let status_text = status.set_scale(PxScale::from(28.0));
         canvas.draw(
-            &info_text,
+            status_text,
             DrawParam::default()
                 .color(Color::WHITE)
                 .dest([
-                    self.camera_offset.x + self.window_size.0 / self.zoom - 150.0,
-                    self.camera_offset.y + 10.0
+                    self.camera_offset.x + 30.0,  // Adjusted X position
+                    self.camera_offset.y + 50.0   // Adjusted Y position
                 ]),
         );
+
+        // 選択された生物の詳細情報（右側）
+        if let Some(selected_index) = self.selected_creature {
+            if let Some(creature) = world.creatures.get(selected_index) {
+                let details = format!(
+                    "Selected Creature\n\
+                     ---------------\n\
+                     Energy: {:.2}\n\
+                     Age: {:.2}\n\
+                     Fitness: {:.2}\n\
+                     State: {:?}\n\
+                     Speed: {:.2}\n\
+                     Position: ({:.0}, {:.0})\n\
+                     Gender: {:?}\n\
+                     ---------------\n\
+                     {}",
+                    creature.physics.energy,
+                    creature.age,
+                    creature.fitness,
+                    creature.behavior_state,
+                    creature.physics.velocity.norm(),
+                    creature.physics.position.x,
+                    creature.physics.position.y,
+                    creature.gender,
+                    if self.following_selected { "[Following]" } else { "" }
+                );
+
+                // 半透明の背景を追加
+                let text_bg = Mesh::new_rectangle(
+                    ctx,
+                    graphics::DrawMode::fill(),
+                    graphics::Rect::new(
+                        self.camera_offset.x + self.window_size.0 / self.zoom - 300.0,
+                        self.camera_offset.y + 20.0,
+                        280.0,
+                        300.0
+                    ),
+                    Color::new(0.0, 0.0, 0.0, 0.7),
+                )?;
+                canvas.draw(&text_bg, DrawParam::default());
+
+                let mut text = Text::new(details);
+                let details_text = text.set_scale(PxScale::from(24.0));
+                canvas.draw(
+                    details_text,
+                    DrawParam::default()
+                        .color(Color::WHITE)
+                        .dest([
+                            self.camera_offset.x + self.window_size.0 / self.zoom - 280.0,
+                            self.camera_offset.y + 30.0
+                        ]),
+                );
+            }
+        }
 
         canvas.finish(ctx)?;
         Ok(())

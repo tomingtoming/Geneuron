@@ -91,6 +91,18 @@ impl World {
             // Cap energy
             creature.physics.energy = creature.physics.energy.min(1.5);
             
+            // トーラス構造の処理
+            if creature.physics.position.x < 0.0 {
+                creature.physics.position.x += self.world_bounds.0;
+            } else if creature.physics.position.x > self.world_bounds.0 {
+                creature.physics.position.x -= self.world_bounds.0;
+            }
+            if creature.physics.position.y < 0.0 {
+                creature.physics.position.y += self.world_bounds.1;
+            } else if creature.physics.position.y > self.world_bounds.1 {
+                creature.physics.position.y -= self.world_bounds.1;
+            }
+
             // Check death condition with grace period
             if creature.physics.energy <= -0.2 {
                 dead_creatures.push(i);
@@ -112,7 +124,7 @@ impl World {
             // Check food consumption with improved positioning
             let nearby_foods = self.food_manager.find_nearby_food(&creature.physics.position, 20.0);
             for (food_idx, food) in nearby_foods {
-                if (!food_to_remove.contains(&food_idx)) {
+                if !food_to_remove.contains(&food_idx) {
                     food_to_remove.push(food_idx);
                     creature.physics.energy += food.energy_value;
                     creature.fitness += 1.0;
@@ -188,6 +200,20 @@ impl World {
         // Update food system
         self.food_manager.update();
         
+        // トーラス構造の処理（食物）
+        for food in &mut self.food_manager.foods {
+            if food.position.x < 0.0 {
+                food.position.x += self.world_bounds.0;
+            } else if food.position.x > self.world_bounds.0 {
+                food.position.x -= self.world_bounds.0;
+            }
+            if food.position.y < 0.0 {
+                food.position.y += self.world_bounds.1;
+            } else if food.position.y > self.world_bounds.1 {
+                food.position.y -= self.world_bounds.1;
+            }
+        }
+
         self.elapsed_time += dt;
         self.generation = (self.elapsed_time / 60.0) as usize + 1;  // New generation every minute
     }
