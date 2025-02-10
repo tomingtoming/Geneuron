@@ -5,23 +5,79 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly security scan
 
 env:
   CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-Dwarnings"
 
 jobs:
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      
+      # Code formatting
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+      
+      # Linting
+      - name: Run clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
   test:
     name: Test
+    needs: check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - run: cargo test --all-features
+      
+      # Run tests with coverage
+      - name: Install cargo-tarpaulin
+        run: cargo install cargo-tarpaulin
+      
+      - name: Run tests with coverage
+        run: cargo tarpaulin --ignore-tests --out Xml
+      
+      # Upload coverage report
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+
+  security:
+    name: Security audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      # Run security audit
+      - uses: actions-rs/audit-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  dependency-check:
+    name: Check dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      # Check for outdated dependencies
+      - name: Install cargo-outdated
+        run: cargo install cargo-outdated
+      
+      - name: Check outdated dependencies
+        run: cargo outdated -R
 
   build:
     name: Build
-    needs: test
+    needs: [test, security]
     strategy:
       matrix:
         include:
@@ -92,3 +148,24 @@ jobs:
             geneuron-windows-amd64.exe/geneuron.exe
             geneuron-macos-amd64/geneuron
             geneuron-web.wasm/dist/*
+          draft: true
+          prerelease: false
+          generate_release_notes: true
+
+  deploy-docs:
+    name: Deploy Documentation
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Build documentation
+        run: cargo doc --no-deps --all-features
+      
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./target/doc
+          force_orphan: true
