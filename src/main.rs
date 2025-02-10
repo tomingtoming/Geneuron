@@ -14,6 +14,11 @@ const WINDOW_HEIGHT: f32 = 600.0;
 trait NeuralNetwork {
     fn process(&self, inputs: &[f32]) -> Vec<f32>;
     fn mutate(&mut self, mutation_rate: f32);
+    
+    // Add default implementation for genome extraction
+    fn extract_genome(&self) -> Vec<f32> {
+        vec![]
+    }
 }
 
 // Single layer neural network
@@ -59,6 +64,17 @@ impl NeuronLayer {
             }
         }
     }
+
+    fn extract_genome(&self) -> Vec<f32> {
+        let mut genome = Vec::new();
+        for weight in self.weights.iter() {
+            genome.push(*weight);
+        }
+        for bias in self.bias.iter() {
+            genome.push(*bias);
+        }
+        genome
+    }
 }
 
 impl NeuralNetwork for NeuronLayer {
@@ -68,6 +84,10 @@ impl NeuralNetwork for NeuronLayer {
 
     fn mutate(&mut self, mutation_rate: f32) {
         self.mutate(mutation_rate)
+    }
+
+    fn extract_genome(&self) -> Vec<f32> {
+        self.extract_genome()
     }
 }
 
@@ -113,6 +133,11 @@ struct Creature {
 impl Creature {
     fn new() -> Self {
         let mut rng = rand::thread_rng();
+        let brain = vec![NeuronLayer::new(7, 4)];
+        let genome = brain.iter()
+            .flat_map(|layer| layer.extract_genome())
+            .collect();
+
         Creature {
             physics: Physics {
                 position: na::Point2::new(rng.gen_range(0.0..800.0), rng.gen_range(0.0..600.0)),
@@ -120,8 +145,8 @@ impl Creature {
                 rotation: rng.gen_range(0.0..2.0 * PI),
                 energy: 1.0,
             },
-            brain: vec![NeuronLayer::new(7, 4)],  // Added 2 inputs for reproduction
-            genome: vec![],
+            brain,
+            genome,
             color: Color::new(rng.gen_range(0.0..1.0), rng.gen_range(0.0..1.0), rng.gen_range(0.0..1.0), 1.0),
             age: 0.0,
             fitness: 0.0,
@@ -234,29 +259,29 @@ impl Creature {
         let mut child = Creature::new();
         let mut rng = rand::thread_rng();
 
-        // Inherit brain weights through crossover
-        for (child_layer, (parent1_layer, parent2_layer)) in 
-            child.brain.iter_mut().zip(
-                self.brain.iter().zip(other.brain.iter())
-            ) {
-            for (idx, weight) in child_layer.weights.iter_mut().enumerate() {
-                *weight = if rng.gen_bool(0.5) {
-                    parent1_layer.weights[idx]
-                } else {
-                    parent2_layer.weights[idx]
-                };
+        // Crossover using genomes
+        let crossover_point = rng.gen_range(0..self.genome.len());
+        child.genome = self.genome[..crossover_point].to_vec();
+        child.genome.extend_from_slice(&other.genome[crossover_point..]);
+
+        // Apply genome to brain weights and biases
+        let mut genome_idx = 0;
+        for layer in &mut child.brain {
+            for weight in layer.weights.iter_mut() {
+                if genome_idx < child.genome.len() {
+                    *weight = child.genome[genome_idx];
+                    genome_idx += 1;
+                }
             }
-            
-            for (idx, bias) in child_layer.bias.iter_mut().enumerate() {
-                *bias = if rng.gen_bool(0.5) {
-                    parent1_layer.bias[idx]
-                } else {
-                    parent2_layer.bias[idx]
-                };
+            for bias in layer.bias.iter_mut() {
+                if genome_idx < child.genome.len() {
+                    *bias = child.genome[genome_idx];
+                    genome_idx += 1;
+                }
             }
         }
 
-        // Inherit color (blend parents' colors with small variation)
+        // Inherit color
         child.color = Color::new(
             ((self.color.r + other.color.r) * 0.5 + rng.gen_range(-0.1..0.1)).clamp(0.0, 1.0),
             ((self.color.g + other.color.g) * 0.5 + rng.gen_range(-0.1..0.1)).clamp(0.0, 1.0),
@@ -264,10 +289,10 @@ impl Creature {
             1.0
         );
 
-        // Mutate the child
+        // Mutate
         child.mutate(0.1);
 
-        // Set initial position near parents
+        // Set position near parents
         child.physics.position = na::Point2::new(
             (self.physics.position.x + other.physics.position.x) * 0.5 + rng.gen_range(-20.0..20.0),
             (self.physics.position.y + other.physics.position.y) * 0.5 + rng.gen_range(-20.0..20.0)
@@ -287,13 +312,35 @@ impl Creature {
     }
 
     fn mutate(&mut self, mutation_rate: f32) {
-        // Mutate neural network
+        let mut rng = rand::thread_rng();
+        
+        // Mutate genome
+        for gene in &mut self.genome {
+            if rng.gen::<f32>() < mutation_rate {
+                *gene += rng.gen_range(-0.5..0.5);
+            }
+        }
+
+        // Apply mutated genome to brain
+        let mut genome_idx = 0;
         for layer in &mut self.brain {
             layer.mutate(mutation_rate);
+            // Update genome with mutated values
+            for weight in layer.weights.iter() {
+                if genome_idx < self.genome.len() {
+                    self.genome[genome_idx] = *weight;
+                    genome_idx += 1;
+                }
+            }
+            for bias in layer.bias.iter() {
+                if genome_idx < self.genome.len() {
+                    self.genome[genome_idx] = *bias;
+                    genome_idx += 1;
+                }
+            }
         }
         
-        // Slightly mutate color
-        let mut rng = rand::thread_rng();
+        // Mutate color
         if rng.gen::<f32>() < mutation_rate {
             self.color = Color::new(
                 (self.color.r + rng.gen_range(-0.1..0.1)).clamp(0.0, 1.0),
@@ -426,7 +473,7 @@ impl World {
             }
         }
         
-        // Handle reproduction events
+        // Handle reproduction events before removing dead creatures
         let mut new_creatures = Vec::new();
         for (parent1_idx, parent2_idx) in reproduction_events {
             if parent1_idx < self.creatures.len() && parent2_idx < self.creatures.len() {
@@ -437,17 +484,16 @@ impl World {
             }
         }
 
-        // Remove dead creatures and add new ones
+        // Remove dead creatures from highest index to lowest
         dead_creatures.sort_unstable_by(|a, b| b.cmp(a));
-        for idx in dead_creatures {
-            self.creatures.remove(idx);
+        for &idx in &dead_creatures {
+            if idx < self.creatures.len() {  // Safety check
+                self.creatures.remove(idx);
+            }
         }
 
-        // Add new creatures with initial energy boost
-        for mut child in new_creatures {
-            child.physics.energy = 1.0;  // Start with full energy
-            self.creatures.push(child);
-        }
+        // Add new creatures
+        self.creatures.extend(new_creatures);
         
         // Increase minimum population if needed
         if self.creatures.len() < 10 {  // Maintain minimum population
