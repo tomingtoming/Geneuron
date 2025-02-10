@@ -162,18 +162,12 @@ impl Creature {
         
         // Current energy level and basic inputs
         inputs.push(self.physics.energy);
-        inputs.push(self.physics.velocity.norm() / 100.0);
+        inputs.push(self.physics.velocity.norm() / 150.0);  // Increased speed normalization
         inputs.push(self.physics.rotation / (2.0 * PI));
         
-        // Find nearest mate
+        // Find nearest mate with adjusted threshold
         let nearest_mate = nearby_creatures.iter()
-            .filter(|(_, _, gender, cooldown, energy)| {
-                *gender != self.gender &&
-                *cooldown <= 0.0 &&
-                *energy >= 0.7 &&  // Increased energy threshold
-                self.reproduction_cooldown <= 0.0 &&
-                self.physics.energy >= 0.7
-            })
+            .filter(|other| self.can_reproduce_with(other))
             .map(|(_, pos, ..)| (pos, na::distance(&self.physics.position, pos)))
             .min_by(|(_, dist_a), (_, dist_b)| dist_a.partial_cmp(dist_b).unwrap());
         
@@ -189,13 +183,15 @@ impl Creature {
             inputs.push(0.0);
         }
 
-        // Find nearest food with priority based on energy level
+        // Find nearest food with higher priority when hungry
         if let Some(nearest) = self.find_nearest_food(nearby_food) {
             let direction = nearest - self.physics.position;
             let distance = direction.norm();
-            // Adjust food priority based on energy level
+            // Increase food priority when energy is low
             let adjusted_distance = if self.physics.energy < 0.3 {
-                distance * 0.5  // Make food appear closer when energy is low
+                distance * 0.3  // Make food appear even closer when very hungry
+            } else if self.physics.energy < 0.5 {
+                distance * 0.7  // Still prioritize food when somewhat hungry
             } else {
                 distance
             };
@@ -211,20 +207,22 @@ impl Creature {
         // Process through neural network and apply movement
         let outputs = self.brain[0].process(&inputs);
         
-        // More nuanced speed control based on energy and situation
-        let base_speed = outputs[0] * 150.0;
+        // Enhanced speed control based on energy and situation
+        let base_speed = outputs[0] * 200.0;  // Increased base speed
         let forward_speed = if self.physics.energy < 0.3 {
-            base_speed * 0.7  // Reduce speed when low on energy
+            base_speed * 0.5  // Conserve energy when very hungry
+        } else if self.physics.energy < 0.5 {
+            base_speed * 0.8  // Move slower when somewhat hungry
         } else if self.physics.energy > 1.2 {
-            base_speed * 1.2  // Boost speed when energy is abundant
+            base_speed * 1.3  // Move faster when energy is abundant
         } else {
             base_speed
         };
         
-        let rotation_speed = (outputs[1] - 0.5) * 2.0 * PI;
+        let rotation_speed = (outputs[1] - 0.5) * 3.0 * PI;  // Increased rotation speed
         
         // Smoother rotation with energy consideration
-        let rotation_factor = if self.physics.energy < 0.3 { 0.15 } else { 0.1 };
+        let rotation_factor = if self.physics.energy < 0.3 { 0.2 } else { 0.15 };
         self.physics.rotation += rotation_speed * rotation_factor;
         
         // Update velocity with energy-based inertia
@@ -234,17 +232,33 @@ impl Creature {
         );
         
         // More responsive movement when energy is high
-        let inertia_factor = if self.physics.energy > 1.0 { 0.15 } else { 0.1 };
+        let inertia_factor = if self.physics.energy > 1.0 {
+            0.2  // Quicker response when energy is high
+        } else if self.physics.energy < 0.3 {
+            0.1  // Slower response when energy is low
+        } else {
+            0.15  // Normal response
+        };
         self.physics.velocity = self.physics.velocity * (1.0 - inertia_factor) + target_velocity * inertia_factor;
 
-        // Add mode indication based on inputs and energy level with updated colors
+        // Update mode color based on state
         self.mode_color = if self.physics.energy >= 0.7 && nearest_mate.is_some() {
-            Color::RED     // Changed: Reproduction mode now red
+            Color::RED     // Reproduction mode
         } else if self.physics.energy < 0.3 {
-            Color::BLUE    // Changed: Hungry mode now blue
+            Color::BLUE    // Hungry mode
         } else {
-            Color::WHITE   // Normal mode stays white
+            Color::WHITE   // Normal mode
         };
+    }
+
+    fn can_reproduce_with(&self, other: &(usize, na::Point2<f32>, Gender, f32, f32)) -> bool {
+        let (_, pos, gender, cooldown, energy) = other;
+        *gender != self.gender &&
+        *cooldown <= 0.0 &&
+        *energy >= 0.7 &&
+        self.reproduction_cooldown <= 0.0 &&
+        self.physics.energy >= 0.7 &&
+        na::distance(&self.physics.position, pos) < 30.0
     }
 
     fn reproduce_with(&self, other: &Creature) -> Creature {
@@ -437,12 +451,7 @@ impl World {
             // Handle reproduction
             if creature.reproduction_cooldown <= 0.0 && creature.physics.energy >= 0.7 {
                 if let Some((mate_idx, _, _, _, _)) = nearby_creatures.iter()
-                    .filter(|(_, pos, gender, cooldown, energy)| {
-                        *gender != creature.gender &&
-                        *cooldown <= 0.0 &&
-                        *energy >= 0.7 &&
-                        na::distance(&creature.physics.position, pos) < 30.0
-                    })
+                    .filter(|other| creature.can_reproduce_with(other))
                     .next()
                 {
                     reproduction_events.push((i, *mate_idx));
