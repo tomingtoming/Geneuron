@@ -10,31 +10,79 @@ Geneuron is a neural evolution simulation where creatures evolve over time to ad
 - Group behavior
 - Detailed creature information display
 - Smooth zoom and camera control
+- Cross-platform support (Windows, macOS, Linux, Web)
 
 ## Requirements
 
 - Rust 1.70.0 or higher
-- Graphics driver supporting OpenGL 3.2 or higher
+- For native builds:
+  - Graphics driver supporting OpenGL 3.2 or higher
+- For web builds:
+  - `wasm32-unknown-unknown` target installed
+  - `wasm-server-runner` for development
 
 ## Installation
 
-1. Clone the repository:
-
+1. Install Rust if you haven't already:
 ```sh
-$ git clone https://github.com/tomingtoming/geneuron.git
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
-2. Navigate to the project directory:
-
+2. Add WebAssembly target (for web builds):
 ```sh
-$ cd geneuron
+rustup target add wasm32-unknown-unknown
 ```
 
-3. Build and run the project:
-
+3. Clone the repository:
 ```sh
-$ cargo run
+git clone https://github.com/tomingtoming/geneuron.git
+cd geneuron
 ```
+
+## Building and Running
+
+### Desktop (Windows, macOS, Linux)
+
+1. Development build and run:
+```sh
+cargo run
+```
+
+2. Release build:
+```sh
+cargo build --release
+```
+
+The output binary will be in `target/release/`:
+- Windows: `geneuron.exe`
+- macOS/Linux: `geneuron`
+
+### Web Browser
+
+1. Development mode with hot-reload:
+```sh
+cargo run --target wasm32-unknown-unknown
+```
+
+2. Release build:
+```sh
+cargo build --target wasm32-unknown-unknown --release
+```
+
+To serve the release build:
+1. Create a distribution directory:
+```sh
+mkdir -p dist
+cp index.html dist/
+cp target/wasm32-unknown-unknown/release/geneuron.wasm dist/
+```
+
+2. Serve with any static file server, for example:
+```sh
+python3 -m http.server --directory dist
+```
+
+Then open `http://localhost:8000` in your web browser.
 
 ## Controls
 

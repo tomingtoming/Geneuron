@@ -1,95 +1,113 @@
-use nalgebra::{DMatrix, DVector};
-use rand::prelude::*;
+use ::rand::prelude::*;
+use ::rand::thread_rng;
+use std::f32::consts::PI;
 
-// Neural network trait for different implementations
-pub trait Neural {
+pub trait Neural: Clone {
     fn process(&self, inputs: &[f32]) -> Vec<f32>;
-    fn mutate(&mut self, mutation_rate: f32);
-    fn extract_genome(&self) -> Vec<f32>;
-    fn apply_genome(&mut self, genome: &[f32]) -> usize;
-    fn clone_box(&self) -> Box<dyn Neural>;
+    fn mutate(&mut self);
 }
 
-// Simple feedforward neural network implementation
+#[derive(Clone)]
 pub struct FeedForwardNetwork {
-    weights: DMatrix<f32>,
-    bias: DVector<f32>,
+    input_size: usize,
+    hidden_size: usize,
+    output_size: usize,
+    hidden_weights: Vec<f32>,
+    output_weights: Vec<f32>,
 }
 
 impl FeedForwardNetwork {
-    pub fn new(inputs: usize, outputs: usize) -> Self {
+    pub fn new(input_size: usize, output_size: usize) -> Self {
+        let hidden_size = (input_size + output_size) * 2;
         let mut rng = thread_rng();
+
+        let hidden_weights = (0..input_size * hidden_size)
+            .map(|_| rng.gen::<f32>() * 2.0 - 1.0)
+            .collect();
+
+        let output_weights = (0..hidden_size * output_size)
+            .map(|_| rng.gen::<f32>() * 2.0 - 1.0)
+            .collect();
+
         FeedForwardNetwork {
-            weights: DMatrix::from_fn(inputs, outputs, |_, _| rng.gen_range(-1.0..1.0)),
-            bias: DVector::from_fn(outputs, |_, _| rng.gen_range(-1.0..1.0)),
+            input_size,
+            hidden_size,
+            output_size,
+            hidden_weights,
+            output_weights,
         }
     }
 
-    fn sigmoid(x: f32) -> f32 {
-        1.0 / (1.0 + (-x).exp())
+    pub fn crossover_with(&self, other: &FeedForwardNetwork) -> FeedForwardNetwork {
+        let mut child = FeedForwardNetwork::new(self.input_size, self.output_size);
+        let mut rng = thread_rng();
+
+        // Crossover hidden weights
+        for i in 0..self.hidden_weights.len() {
+            child.hidden_weights[i] = if rng.gen::<bool>() {
+                self.hidden_weights[i]
+            } else {
+                other.hidden_weights[i]
+            };
+        }
+
+        // Crossover output weights
+        for i in 0..self.output_weights.len() {
+            child.output_weights[i] = if rng.gen::<bool>() {
+                self.output_weights[i]
+            } else {
+                other.output_weights[i]
+            };
+        }
+
+        child
     }
 }
 
 impl Neural for FeedForwardNetwork {
     fn process(&self, inputs: &[f32]) -> Vec<f32> {
-        let input_matrix = DMatrix::from_row_slice(1, inputs.len(), inputs);
-        let output = input_matrix * &self.weights + self.bias.transpose();
-        output.map(Self::sigmoid).row(0).iter().cloned().collect()
+        assert_eq!(inputs.len(), self.input_size);
+
+        // Process hidden layer
+        let mut hidden = vec![0.0; self.hidden_size];
+        for i in 0..self.hidden_size {
+            for j in 0..self.input_size {
+                hidden[i] += inputs[j] * self.hidden_weights[i * self.input_size + j];
+            }
+            hidden[i] = (hidden[i] * PI).tanh();
+        }
+
+        // Process output layer
+        let mut outputs = vec![0.0; self.output_size];
+        for i in 0..self.output_size {
+            for j in 0..self.hidden_size {
+                outputs[i] += hidden[j] * self.output_weights[i * self.hidden_size + j];
+            }
+            outputs[i] = (outputs[i] * PI).tanh();
+        }
+
+        outputs
     }
 
-    fn mutate(&mut self, mutation_rate: f32) {
+    fn mutate(&mut self) {
         let mut rng = thread_rng();
+        let mutation_rate = 0.1;
+        let mutation_range = 0.2;
 
-        for weight in self.weights.iter_mut() {
+        // Mutate hidden weights
+        for weight in &mut self.hidden_weights {
             if rng.gen::<f32>() < mutation_rate {
-                *weight += rng.gen_range(-0.5..0.5);
+                *weight += rng.gen::<f32>() * mutation_range * 2.0 - mutation_range;
+                *weight = weight.clamp(-1.0, 1.0);
             }
         }
 
-        for bias in self.bias.iter_mut() {
+        // Mutate output weights
+        for weight in &mut self.output_weights {
             if rng.gen::<f32>() < mutation_rate {
-                *bias += rng.gen_range(-0.5..0.5);
+                *weight += rng.gen::<f32>() * mutation_range * 2.0 - mutation_range;
+                *weight = weight.clamp(-1.0, 1.0);
             }
         }
-    }
-
-    fn extract_genome(&self) -> Vec<f32> {
-        let mut genome = Vec::new();
-        genome.extend(self.weights.iter());
-        genome.extend(self.bias.iter());
-        genome
-    }
-
-    fn apply_genome(&mut self, genome: &[f32]) -> usize {
-        let mut idx = 0;
-
-        for weight in self.weights.iter_mut() {
-            if idx < genome.len() {
-                *weight = genome[idx];
-                idx += 1;
-            }
-        }
-
-        for bias in self.bias.iter_mut() {
-            if idx < genome.len() {
-                *bias = genome[idx];
-                idx += 1;
-            }
-        }
-
-        idx
-    }
-
-    fn clone_box(&self) -> Box<dyn Neural> {
-        Box::new(FeedForwardNetwork {
-            weights: self.weights.clone(),
-            bias: self.bias.clone(),
-        })
-    }
-}
-
-impl Clone for Box<dyn Neural> {
-    fn clone(&self) -> Self {
-        self.clone_box()
     }
 }

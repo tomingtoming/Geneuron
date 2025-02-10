@@ -1,13 +1,11 @@
-mod creature;
-mod food;
 mod neural;
+mod creature;
 mod physics;
-mod rendering;
 mod world;
+mod rendering;
+mod food;
 
-use ggez::event::{self, EventHandler};
-use ggez::winit::event::VirtualKeyCode;
-use ggez::{Context, GameResult};
+use macroquad::prelude::*;
 use nalgebra as na;
 
 // Window constants
@@ -15,8 +13,8 @@ const WINDOW_WIDTH: f32 = 800.0;
 const WINDOW_HEIGHT: f32 = 600.0;
 
 // World constants
-const WORLD_WIDTH: f32 = 2400.0; // ウィンドウの3倍
-const WORLD_HEIGHT: f32 = 1800.0; // ウィンドウの3倍
+const WORLD_WIDTH: f32 = 2400.0;  // ウィンドウの3倍
+const WORLD_HEIGHT: f32 = 1800.0;  // ウィンドウの3倍
 
 struct GameState {
     world: world::World,
@@ -24,91 +22,67 @@ struct GameState {
     paused: bool,
 }
 
-impl EventHandler for GameState {
-    fn update(&mut self, ctx: &mut Context) -> GameResult {
+impl GameState {
+    fn new() -> Self {
+        GameState {
+            world: world::World::new(WORLD_WIDTH, WORLD_HEIGHT),
+            renderer: rendering::Renderer::new(WINDOW_WIDTH, WINDOW_HEIGHT),
+            paused: false,
+        }
+    }
+
+    async fn update(&mut self) {
         // Toggle pause with space key
-        if ctx.keyboard.is_key_pressed(VirtualKeyCode::Space) {
+        if is_key_pressed(KeyCode::Space) {
             self.paused = !self.paused;
         }
 
         // Smooth zoom control
-        if ctx.keyboard.is_key_pressed(VirtualKeyCode::Z) {
-            self.renderer.set_zoom((self.renderer.zoom * 1.05).min(5.0)); // Limit max zoom
+        if is_key_down(KeyCode::Z) {
+            self.renderer.set_zoom((self.renderer.zoom * 1.05).min(5.0));  // Limit max zoom
         }
-        if ctx.keyboard.is_key_pressed(VirtualKeyCode::X) {
-            self.renderer.set_zoom((self.renderer.zoom * 0.95).max(0.2)); // Limit min zoom
+        if is_key_down(KeyCode::X) {
+            self.renderer.set_zoom((self.renderer.zoom * 0.95).max(0.2));  // Limit min zoom
         }
 
         // Toggle follow mode with F key
-        if ctx.keyboard.is_key_pressed(VirtualKeyCode::F) {
+        if is_key_pressed(KeyCode::F) {
             self.renderer.toggle_follow();
         }
 
         // Select creature with left mouse click
-        if ctx
-            .mouse
-            .button_pressed(ggez::input::mouse::MouseButton::Left)
-        {
-            let mouse_pos = ctx.mouse.position();
-            let world_mouse_pos = na::Point2::new(
-                mouse_pos.x * self.renderer.zoom,
-                mouse_pos.y * self.renderer.zoom,
+        if is_mouse_button_pressed(MouseButton::Left) {
+            let mouse_pos = mouse_position();
+            let world_pos = na::Point2::new(
+                mouse_pos.0 / self.renderer.zoom,
+                mouse_pos.1 / self.renderer.zoom,
             );
-            self.select_creature_at(world_mouse_pos);
+            self.select_creature_at(world_pos);
         }
 
         // Deselect creature with right mouse click
-        if ctx
-            .mouse
-            .button_pressed(ggez::input::mouse::MouseButton::Right)
-        {
+        if is_mouse_button_pressed(MouseButton::Right) {
             self.renderer.select_creature(None);
         }
 
         if !self.paused {
-            let dt = ctx.time.delta().as_secs_f32();
-            self.world.update(dt);
+            self.world.update(get_frame_time());
         }
 
-        Ok(())
-    }
-
-    fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        self.renderer.render(ctx, &self.world)
-    }
-
-    fn resize_event(&mut self, _ctx: &mut Context, width: f32, height: f32) -> GameResult {
-        self.renderer.resize(width, height); // レンダラーのみリサイズを通知
-        Ok(())
-    }
-}
-
-impl GameState {
-    fn new(ctx: &mut Context) -> GameResult<GameState> {
-        let (width, height) = ctx.gfx.drawable_size();
-        Ok(GameState {
-            world: world::World::new(WORLD_WIDTH, WORLD_HEIGHT), // より大きな世界サイズを使用
-            renderer: rendering::Renderer::new(width, height),
-            paused: false,
-        })
+        self.renderer.resize(screen_width(), screen_height());
     }
 
     fn select_creature_at(&mut self, position: na::Point2<f32>) {
-        // Convert window coordinates to world coordinates, considering zoom
+        // Convert window coordinates to world coordinates
         let world_x = self.renderer.camera_offset.x + position.x / self.renderer.zoom;
         let world_y = self.renderer.camera_offset.y + position.y / self.renderer.zoom;
         let world_pos = na::Point2::new(world_x, world_y);
 
-        let selected_index = self
-            .world
-            .creatures
-            .iter()
+        let selected_index = self.world.creatures.iter()
             .enumerate()
             .filter(|(_, creature)| {
-                creature
-                    .physics
-                    .distance_to(&world_pos, self.world.world_bounds)
-                    < 20.0
+                // トーラス構造を考慮した距離計算
+                creature.physics.distance_to(&world_pos, self.world.world_bounds) < 20.0  // 選択範囲を広げる
             })
             .map(|(index, _)| index)
             .next();
@@ -116,19 +90,23 @@ impl GameState {
     }
 }
 
-fn main() -> GameResult {
-    // Game configuration
-    let cb = ggez::ContextBuilder::new("geneuron", "neuroevolution")
-        .window_setup(ggez::conf::WindowSetup::default().title("Geneuron-RS"))
-        .window_mode(
-            ggez::conf::WindowMode::default()
-                .dimensions(WINDOW_WIDTH, WINDOW_HEIGHT)
-                .resizable(true),
-        );
+fn window_conf() -> Conf {
+    Conf {
+        window_title: "Geneuron-RS".to_owned(),
+        window_width: WINDOW_WIDTH as i32,
+        window_height: WINDOW_HEIGHT as i32,
+        window_resizable: true,
+        ..Default::default()
+    }
+}
 
-    let (mut ctx, event_loop) = cb.build()?;
+#[macroquad::main(window_conf)]
+async fn main() {
+    let mut state = GameState::new();
 
-    // Create and run game state
-    let state = GameState::new(&mut ctx)?;
-    event::run(ctx, event_loop, state)
+    loop {
+        state.update().await;
+        state.renderer.render(&state.world).await;
+        next_frame().await;
+    }
 }

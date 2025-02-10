@@ -1,29 +1,21 @@
-use ggez::graphics::Color;
+use macroquad::prelude::*;
 use nalgebra as na;
-use rand::prelude::*;
+use ::rand::prelude::*;
+use ::rand::thread_rng;
 
 #[derive(Clone)]
 pub struct Food {
     pub position: na::Point2<f32>,
-    pub energy_value: f32,
     pub size: f32,
     pub color: Color,
-}
-
-pub struct FoodManager {
-    pub foods: Vec<Food>,
-    pub world_bounds: (f32, f32), // Make world_bounds public
-    min_food_count: usize,
-    max_food_count: usize,
 }
 
 impl Food {
     pub fn new(position: na::Point2<f32>) -> Self {
         Food {
             position,
-            energy_value: 0.8,   // Default energy value
-            size: 5.0,           // Default size
-            color: Color::GREEN, // Default color
+            size: 5.0,
+            color: GREEN,
         }
     }
 
@@ -32,26 +24,33 @@ impl Food {
     }
 }
 
-#[allow(dead_code)]
-impl FoodManager {
-    pub fn new(world_bounds: (f32, f32), min_count: usize, max_count: usize) -> Self {
-        let mut manager = FoodManager {
-            foods: Vec::new(),
-            world_bounds,
-            min_food_count: min_count,
-            max_food_count: max_count,
-        };
-        manager.spawn_initial_food();
-        manager
-    }
+#[derive(Clone)]
+pub struct FoodManager {
+    pub foods: Vec<Food>,
+    pub world_bounds: (f32, f32), // Make world_bounds public
+    min_food_count: usize,
+    max_food_count: usize,
+}
 
-    fn spawn_initial_food(&mut self) {
+impl FoodManager {
+    pub fn new(world_bounds: (f32, f32)) -> Self {
+        let max_food_count = 100;
+        let min_food_count = 50;
+        let mut foods = Vec::with_capacity(max_food_count);
         let mut rng = thread_rng();
-        for _ in 0..self.min_food_count {
-            self.spawn_food_at(na::Point2::new(
-                rng.gen_range(0.0..self.world_bounds.0),
-                rng.gen_range(0.0..self.world_bounds.1),
-            ));
+
+        // Initial food placement
+        for _ in 0..min_food_count {
+            let x = rng.gen::<f32>() * world_bounds.0;
+            let y = rng.gen::<f32>() * world_bounds.1;
+            foods.push(Food::new(na::Point2::new(x, y)));
+        }
+
+        FoodManager {
+            foods,
+            max_food_count,
+            min_food_count,
+            world_bounds,
         }
     }
 
@@ -87,11 +86,18 @@ impl FoodManager {
         }
     }
 
-    pub fn find_nearby_food(&self, position: &na::Point2<f32>, radius: f32) -> Vec<(usize, &Food)> {
+    pub fn find_nearby_food(&self, position: &na::Point2<f32>, radius: f32) -> Vec<(usize, Food)> {
         self.foods
             .iter()
             .enumerate()
-            .filter(|(_, food)| food.distance_to(position) <= radius)
+            .filter(|(_, food)| {
+                let dx = (food.position.x - position.x).abs();
+                let dy = (food.position.y - position.y).abs();
+                let wrapped_dx = dx.min(self.world_bounds.0 - dx);
+                let wrapped_dy = dy.min(self.world_bounds.1 - dy);
+                (wrapped_dx * wrapped_dx + wrapped_dy * wrapped_dy).sqrt() < radius
+            })
+            .map(|(i, food)| (i, food.clone()))
             .collect()
     }
 
@@ -102,5 +108,22 @@ impl FoodManager {
             food.position.y = (food.position.y / self.world_bounds.1) * height;
         }
         self.world_bounds = (width, height);
+    }
+
+    pub fn update_positions(&mut self) {
+        for food in &mut self.foods {
+            // トーラス構造の処理
+            if food.position.x < 0.0 {
+                food.position.x += self.world_bounds.0;
+            } else if food.position.x > self.world_bounds.0 {
+                food.position.x -= self.world_bounds.0;
+            }
+
+            if food.position.y < 0.0 {
+                food.position.y += self.world_bounds.1;
+            } else if food.position.y > self.world_bounds.1 {
+                food.position.y -= self.world_bounds.1;
+            }
+        }
     }
 }
