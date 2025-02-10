@@ -6,17 +6,17 @@ use nalgebra as na;
 use rand::Rng;
 use std::f32::consts::PI;
 
-// 定数定義を追加
+// Window constants
 const WINDOW_WIDTH: f32 = 800.0;
 const WINDOW_HEIGHT: f32 = 600.0;
 
-// 神経系のトレイト定義
+// Neural network trait definition
 trait NeuralNetwork {
     fn process(&self, inputs: &[f32]) -> Vec<f32>;
     fn mutate(&mut self, mutation_rate: f32);
 }
 
-// 単層ニューラルネットワーク
+// Single layer neural network
 struct NeuronLayer {
     weights: na::DMatrix<f32>,
     bias: na::DVector<f32>,
@@ -71,7 +71,7 @@ impl NeuralNetwork for NeuronLayer {
     }
 }
 
-// 生物の物理特性
+// Creature physics properties
 #[derive(Clone)]
 struct Physics {
     position: na::Point2<f32>,
@@ -80,7 +80,7 @@ struct Physics {
     energy: f32,
 }
 
-// 生物の定義
+// Creature definition
 struct Creature {
     physics: Physics,
     brain: Vec<NeuronLayer>,
@@ -150,7 +150,7 @@ impl Creature {
     }
 }
 
-// ワールドの状態管理
+// World state management
 struct World {
     creatures: Vec<Creature>,
     generation: usize,
@@ -253,22 +253,22 @@ impl World {
     }
 }
 
-// メインのゲームステート
+// Main game state
 struct GameState {
     world: World,
     paused: bool,
     zoom: f32,
-    window_size: (f32, f32),  // 追加：ウィンドウサイズを保持
+    window_size: (f32, f32),  // Added: Store window size
 }
 
 impl EventHandler for GameState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
-        // スペースキーでポーズ切り替え
+        // Toggle pause with space key
         if ctx.keyboard.is_key_pressed(VirtualKeyCode::Space) {
             self.paused = !self.paused;
         }
 
-        // ズーム制御
+        // Zoom control
         if ctx.keyboard.is_key_pressed(VirtualKeyCode::Z) {
             self.zoom *= 1.05;
         }
@@ -287,7 +287,7 @@ impl EventHandler for GameState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let mut canvas = Canvas::from_frame(ctx, Color::BLACK);
         
-        // ウィンドウサイズに基づいてズーム適用
+        // Apply zoom based on window size
         canvas.set_screen_coordinates(graphics::Rect::new(
             0.0, 
             0.0, 
@@ -295,7 +295,7 @@ impl EventHandler for GameState {
             self.window_size.1 / self.zoom,
         ));
 
-        // 食料源の描画
+        // Draw food sources
         for food in &self.world.food_sources {
             let food_circle = Mesh::new_circle(
                 ctx,
@@ -308,9 +308,9 @@ impl EventHandler for GameState {
             canvas.draw(&food_circle, DrawParam::default());
         }
 
-        // 生物の描画
+        // Draw creatures
         for creature in &self.world.creatures {
-            // 生物の本体
+            // Creature body
             let body = Mesh::new_circle(
                 ctx,
                 graphics::DrawMode::fill(),
@@ -321,7 +321,7 @@ impl EventHandler for GameState {
             )?;
             canvas.draw(&body, DrawParam::default());
 
-            // 向きを示す線
+            // Direction indicator
             let direction_line = Mesh::new_line(
                 ctx,
                 &[
@@ -337,9 +337,9 @@ impl EventHandler for GameState {
             canvas.draw(&direction_line, DrawParam::default());
         }
 
-        // 情報表示
+        // Display information
         let info_text = Text::new(format!(
-            "世代: {}\n生物数: {}\n経過時間: {:.1}秒\nFPS: {:.1}",
+            "Generation: {}\nCreatures: {}\nElapsed Time: {:.1}s\nFPS: {:.1}",
             self.world.generation,
             self.world.creatures.len(),
             self.world.elapsed_time,
@@ -356,7 +356,7 @@ impl EventHandler for GameState {
         Ok(())
     }
 
-    // ウィンドウリサイズイベントのハンドラを追加
+    // Added: Window resize event handler
     fn resize_event(&mut self, ctx: &mut Context, width: f32, height: f32) -> GameResult {
         self.window_size = (width, height);
         Ok(())
@@ -381,16 +381,16 @@ impl GameState {
 }
 
 fn main() -> GameResult {
-    // ゲーム設定
+    // Game configuration
     let cb = ggez::ContextBuilder::new("geneuron", "neuroevolution")
         .window_setup(ggez::conf::WindowSetup::default().title("Geneuron-RS"))
         .window_mode(ggez::conf::WindowMode::default()
             .dimensions(WINDOW_WIDTH, WINDOW_HEIGHT)
-            .resizable(true));  // ウィンドウをリサイズ可能に
+            .resizable(true));  // Make window resizable
     
     let (mut ctx, event_loop) = cb.build()?;
     
-    // ゲームステートの作成と実行
+    // Create and run game state
     let state = GameState::new(&mut ctx)?;
     event::run(ctx, event_loop, state)
 }
