@@ -107,6 +107,7 @@ struct Creature {
     fitness: f32,
     gender: Gender,
     reproduction_cooldown: f32,  // Time until next reproduction is possible
+    mode_color: Color,  // Added: Mode color indication
 }
 
 impl Creature {
@@ -126,6 +127,7 @@ impl Creature {
             fitness: 0.0,
             gender: if rng.gen_bool(0.5) { Gender::Male } else { Gender::Female },
             reproduction_cooldown: 0.0,
+            mode_color: Color::WHITE,  // Default mode color
         }
     }
 
@@ -208,6 +210,15 @@ impl Creature {
         // More responsive movement when energy is high
         let inertia_factor = if self.physics.energy > 1.0 { 0.15 } else { 0.1 };
         self.physics.velocity = self.physics.velocity * (1.0 - inertia_factor) + target_velocity * inertia_factor;
+
+        // Add mode indication based on inputs and energy level
+        self.mode_color = if self.physics.energy >= 0.7 && nearest_mate.is_some() {
+            Color::MAGENTA  // Reproduction mode color
+        } else if self.physics.energy < 0.3 {
+            Color::RED  // Hungry mode color
+        } else {
+            Color::WHITE  // Normal mode color
+        };
     }
 
     fn can_reproduce_with(&self, other: &Creature) -> bool {
@@ -535,7 +546,7 @@ impl EventHandler for GameState {
             )?;
             canvas.draw(&body, DrawParam::default());
 
-            // Direction indicator
+            // Direction indicator with mode color
             let direction_line = Mesh::new_line(
                 ctx,
                 &[
@@ -546,7 +557,7 @@ impl EventHandler for GameState {
                     ],
                 ],
                 2.0,
-                Color::WHITE,
+                creature.mode_color,  // Use mode color for direction line
             )?;
             canvas.draw(&direction_line, DrawParam::default());
         }
