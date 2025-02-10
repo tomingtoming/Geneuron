@@ -22,7 +22,12 @@ impl World {
         // Create initial population
         let creatures = (0..50).map(|_| {
             let brain = Box::new(FeedForwardNetwork::new(9, 4));
-            Creature::new(brain)
+            let mut creature = Creature::new(brain);
+            creature.physics.position = na::Point2::new(
+                rand::thread_rng().gen_range(0.0..width),
+                rand::thread_rng().gen_range(0.0..height),
+            );
+            creature
         }).collect();
 
         // Initialize food manager
@@ -107,7 +112,7 @@ impl World {
             // Check food consumption with improved positioning
             let nearby_foods = self.food_manager.find_nearby_food(&creature.physics.position, 20.0);
             for (food_idx, food) in nearby_foods {
-                if !food_to_remove.contains(&food_idx) {
+                if (!food_to_remove.contains(&food_idx)) {
                     food_to_remove.push(food_idx);
                     creature.physics.energy += food.energy_value;
                     creature.fitness += 1.0;

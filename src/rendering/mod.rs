@@ -1,5 +1,5 @@
 use ggez::{Context, GameResult};
-use ggez::graphics::{self, Canvas, Color, DrawParam, Mesh, Text};
+use ggez::graphics::{self, Canvas, Color, DrawParam, Mesh, Text, PxScale};
 use nalgebra::Point2;
 use crate::world::World;
 
@@ -144,7 +144,7 @@ impl Renderer {
                     );
 
                     // 画面端に固定された位置に情報を表示
-                    let details_text = Text::new(details);
+                    let details_text = Text::new(details).set_scale(PxScale::from(24.0));  // テキストサイズを大きく
                     canvas.draw(
                         &details_text,
                         DrawParam::default()
@@ -157,7 +157,7 @@ impl Renderer {
 
                     // 追従状態の表示
                     if self.following_selected {
-                        let following_text = Text::new("Following");
+                        let following_text = Text::new("Following").set_scale(PxScale::from(24.0));  // テキストサイズを大きく
                         canvas.draw(
                             &following_text,
                             DrawParam::default()
@@ -179,7 +179,7 @@ impl Renderer {
             world.creatures.len(),
             world.elapsed_time,
             ctx.time.fps(),
-        ));
+        )).set_scale(PxScale::from(24.0));  // テキストサイズを大きく
         canvas.draw(
             &info_text,
             DrawParam::default()
