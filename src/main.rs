@@ -211,13 +211,13 @@ impl Creature {
         let inertia_factor = if self.physics.energy > 1.0 { 0.15 } else { 0.1 };
         self.physics.velocity = self.physics.velocity * (1.0 - inertia_factor) + target_velocity * inertia_factor;
 
-        // Add mode indication based on inputs and energy level
+        // Add mode indication based on inputs and energy level with updated colors
         self.mode_color = if self.physics.energy >= 0.7 && nearest_mate.is_some() {
-            Color::MAGENTA  // Reproduction mode color
+            Color::RED     // Changed: Reproduction mode now red
         } else if self.physics.energy < 0.3 {
-            Color::RED  // Hungry mode color
+            Color::BLUE    // Changed: Hungry mode now blue
         } else {
-            Color::WHITE  // Normal mode color
+            Color::WHITE   // Normal mode stays white
         };
     }
 
