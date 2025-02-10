@@ -12,7 +12,7 @@ pub struct Food {
 
 pub struct FoodManager {
     pub foods: Vec<Food>,
-    world_bounds: (f32, f32),
+    pub world_bounds: (f32, f32),  // Make world_bounds public
     min_food_count: usize,
     max_food_count: usize,
 }
@@ -90,5 +90,14 @@ impl FoodManager {
         self.foods.iter().enumerate()
             .filter(|(_, food)| food.distance_to(position) <= radius)
             .collect()
+    }
+
+    pub fn resize(&mut self, width: f32, height: f32) {
+        // Scale food positions to new bounds
+        for food in &mut self.foods {
+            food.position.x = (food.position.x / self.world_bounds.0) * width;
+            food.position.y = (food.position.y / self.world_bounds.1) * height;
+        }
+        self.world_bounds = (width, height);
     }
 }

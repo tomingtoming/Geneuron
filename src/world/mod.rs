@@ -124,7 +124,7 @@ impl World {
             // Check food consumption with improved positioning
             let nearby_foods = self.food_manager.find_nearby_food(&creature.physics.position, 20.0);
             for (food_idx, food) in nearby_foods {
-                if !food_to_remove.contains(&food_idx) {
+                if !food_to_remove.contains(&food_idx) {  // 余分な括弧を削除
                     food_to_remove.push(food_idx);
                     creature.physics.energy += food.energy_value;
                     creature.fitness += 1.0;
@@ -216,5 +216,19 @@ impl World {
 
         self.elapsed_time += dt;
         self.generation = (self.elapsed_time / 60.0) as usize + 1;  // New generation every minute
+    }
+
+    pub fn resize(&mut self, width: f32, height: f32) {
+        let old_bounds = self.world_bounds;
+        self.world_bounds = (width, height);
+        
+        // 生物の位置を新しい境界に合わせてスケーリング
+        for creature in &mut self.creatures {
+            creature.physics.position.x = (creature.physics.position.x / old_bounds.0) * width;
+            creature.physics.position.y = (creature.physics.position.y / old_bounds.1) * height;
+        }
+        
+        // 食物マネージャーのリサイズを呼び出し
+        self.food_manager.resize(width, height);
     }
 }
