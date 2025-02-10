@@ -28,7 +28,23 @@ impl Renderer {
     }
 
     pub fn resize(&mut self, width: f32, height: f32) {
+        // ウィンドウサイズを更新
         self.window_size = (width, height);
+
+        // ズーム値を調整して、以前と同じ世界の部分が見えるようにする
+        let prev_view_width = self.window_size.0 / self.zoom;
+        let prev_view_height = self.window_size.1 / self.zoom;
+        let new_zoom_x = width / prev_view_width;
+        let new_zoom_y = height / prev_view_height;
+        self.zoom = self.zoom * new_zoom_x.min(new_zoom_y);
+
+        // カメラ位置を調整して、ビューポートの中心が変わらないようにする
+        let old_center_x = self.camera_offset.x + (prev_view_width / 2.0);
+        let old_center_y = self.camera_offset.y + (prev_view_height / 2.0);
+        let new_view_width = width / self.zoom;
+        let new_view_height = height / self.zoom;
+        self.camera_offset.x = old_center_x - (new_view_width / 2.0);
+        self.camera_offset.y = old_center_y - (new_view_height / 2.0);
     }
 
     pub fn select_creature(&mut self, index: Option<usize>) {

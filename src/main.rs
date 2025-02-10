@@ -72,8 +72,7 @@ impl EventHandler for GameState {
     }
 
     fn resize_event(&mut self, _ctx: &mut Context, width: f32, height: f32) -> GameResult {
-        self.renderer.resize(width, height);
-        self.world.resize(width, height);
+        self.renderer.resize(width, height);  // レンダラーのみリサイズを通知
         Ok(())
     }
 }
