@@ -1,14 +1,15 @@
 # Geneuron
 
-A neural evolution simulation program that combines artificial life with neural networks, visually representing how organisms evolve while searching for food.
+Geneuron is a neural evolution simulation where creatures evolve over time to adapt to their environment. The simulation uses neural networks to control the behavior of the creatures, and they can reproduce, feed, and interact with each other.
 
 ## Features
 
-- Simple neural network-based organism behavior control
-- Real-time physics simulation
-- Cross-platform support (Windows, macOS, Linux)
-- Interactive visualization
-- Smooth movement and natural behavior
+- Neural network-based behavior
+- Reproduction and mutation
+- Energy management
+- Group behavior
+- Detailed creature information display
+- Smooth zoom and camera control
 
 ## Requirements
 
@@ -17,23 +18,32 @@ A neural evolution simulation program that combines artificial life with neural 
 
 ## Installation
 
-```bash
-git clone git@github.com:tomingtoming/geneuron.git
-cd geneuron
-cargo build --release
+1. Clone the repository:
+
+```sh
+$ git clone https://github.com/tomingtoming/geneuron.git
 ```
 
-## Running the Simulation
+2. Navigate to the project directory:
 
-```bash
-cargo run --release
+```sh
+$ cd geneuron
+```
+
+3. Build and run the project:
+
+```sh
+$ cargo run
 ```
 
 ## Controls
 
-- Space key: Pause/Resume simulation
-- Z key: Zoom in
-- X key: Zoom out
+- **Space**: Pause/Unpause the simulation
+- **Z**: Zoom in
+- **X**: Zoom out
+- **F**: Toggle follow mode for selected creature
+- **Left Click**: Select a creature
+- **Right Click**: Deselect the selected creature
 
 ## How the Simulation Works
 
@@ -49,7 +59,7 @@ cargo run --release
 
 ## License
 
-MIT License
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ## Author
 
