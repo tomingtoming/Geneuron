@@ -65,26 +65,26 @@ impl Creature {
         // Update state transition timer
         self.state_transition_timer -= dt;
         if self.state_transition_timer <= 0.0 {
-            self.update_behavior_state(nearby_food, nearby_creatures);
+            self.update_behavior_state(nearby_food, nearby_creatures, bounds);
             self.state_transition_timer = 0.5; // Check state every 0.5 seconds
         }
 
-        self.think(nearby_food, nearby_creatures);
+        self.think(nearby_food, nearby_creatures, bounds);
         self.physics.update(dt, bounds);
         self.age += dt;
     }
 
-    fn update_behavior_state(&mut self, nearby_food: &[na::Point2<f32>], nearby_creatures: &[(usize, na::Point2<f32>, Gender, f32, f32)]) {
+    fn update_behavior_state(&mut self, nearby_food: &[na::Point2<f32>], nearby_creatures: &[(usize, na::Point2<f32>, Gender, f32, f32)], bounds: (f32, f32)) {
         let has_nearby_food = nearby_food.iter()
-            .any(|food| self.physics.distance_to(food) < 100.0);
+            .any(|food| self.physics.distance_to(food, bounds) < 100.0);
         
         let has_potential_mate = nearby_creatures.iter()
-            .any(|other| self.can_reproduce_with(other));
+            .any(|other| self.can_reproduce_with(other, bounds));
         
         let has_nearby_friends = nearby_creatures.iter()
             .filter(|(_, pos, gender, _, _)| 
                 *gender == self.gender && 
-                self.physics.distance_to(pos) < 50.0
+                self.physics.distance_to(pos, bounds) < 50.0
             ).count() >= 2;
 
         self.behavior_state = match (self.physics.energy, has_nearby_food, has_potential_mate, has_nearby_friends) {
@@ -97,7 +97,7 @@ impl Creature {
         };
     }
 
-    fn think(&mut self, nearby_food: &[na::Point2<f32>], nearby_creatures: &[(usize, na::Point2<f32>, Gender, f32, f32)]) {
+    fn think(&mut self, nearby_food: &[na::Point2<f32>], nearby_creatures: &[(usize, na::Point2<f32>, Gender, f32, f32)], bounds: (f32, f32)) {
         let mut inputs = Vec::with_capacity(9);
         
         // Basic state inputs
@@ -117,12 +117,12 @@ impl Creature {
         // Social influence (flock behavior)
         let nearest_friend = nearby_creatures.iter()
             .filter(|(_, _, gender, _, _)| *gender == self.gender)
-            .map(|(_, pos, ..)| (pos, self.physics.distance_to(pos)))
+            .map(|(_, pos, ..)| (pos, self.physics.distance_to(pos, bounds)))
             .min_by(|(_, dist_a), (_, dist_b)| dist_a.partial_cmp(dist_b).unwrap());
 
         if let Some((pos, distance)) = nearest_friend {
             let normalized_distance = (distance / 800.0) / social_weight;
-            let (_, angle_diff) = self.physics.direction_to(pos);
+            let (_, angle_diff) = self.physics.direction_to(pos, bounds);
             inputs.push(normalized_distance);
             inputs.push(angle_diff / PI);
         } else {
@@ -131,8 +131,8 @@ impl Creature {
         }
 
         // Food seeking with dynamic priority
-        if let Some(nearest) = self.find_nearest_food(nearby_food) {
-            let (distance, angle_diff) = self.physics.direction_to(&nearest);
+        if let Some(nearest) = self.find_nearest_food(nearby_food, bounds) {
+            let (distance, angle_diff) = self.physics.direction_to(&nearest, bounds);
             let normalized_distance = (distance / 800.0) / food_weight;
             inputs.push(normalized_distance);
             inputs.push(angle_diff / PI);
@@ -143,12 +143,12 @@ impl Creature {
 
         // Mate seeking with dynamic priority
         if let Some((mate_pos, distance)) = nearby_creatures.iter()
-            .filter(|other| self.can_reproduce_with(other))
-            .map(|(_, pos, ..)| (pos, self.physics.distance_to(pos)))
+            .filter(|other| self.can_reproduce_with(other, bounds))
+            .map(|(_, pos, ..)| (pos, self.physics.distance_to(pos, bounds)))
             .min_by(|(_, dist_a), (_, dist_b)| dist_a.partial_cmp(dist_b).unwrap())
         {
             let normalized_distance = (distance / 800.0) / mate_weight;
-            let (_, angle_diff) = self.physics.direction_to(mate_pos);
+            let (_, angle_diff) = self.physics.direction_to(mate_pos, bounds);
             inputs.push(normalized_distance);
             inputs.push(angle_diff / PI);
         } else {
@@ -207,21 +207,21 @@ impl Creature {
         };
     }
 
-    pub fn can_reproduce_with(&self, other: &(usize, na::Point2<f32>, Gender, f32, f32)) -> bool {
+    pub fn can_reproduce_with(&self, other: &(usize, na::Point2<f32>, Gender, f32, f32), bounds: (f32, f32)) -> bool {
         let (_, pos, gender, cooldown, energy) = other;
         *gender != self.gender &&
         *cooldown <= 0.0 &&
         *energy >= 0.7 &&
         self.reproduction_cooldown <= 0.0 &&
         self.physics.energy >= 0.7 &&
-        self.physics.distance_to(pos) < 30.0
+        self.physics.distance_to(pos, bounds) < 30.0
     }
 
-    fn find_nearest_food(&self, food_sources: &[na::Point2<f32>]) -> Option<na::Point2<f32>> {
+    fn find_nearest_food(&self, food_sources: &[na::Point2<f32>], bounds: (f32, f32)) -> Option<na::Point2<f32>> {
         food_sources.iter()
             .min_by(|a, b| {
-                let dist_a = self.physics.distance_to(a);
-                let dist_b = self.physics.distance_to(b);
+                let dist_a = self.physics.distance_to(a, bounds);
+                let dist_b = self.physics.distance_to(b, bounds);
                 dist_a.partial_cmp(&dist_b).unwrap()
             })
             .copied()

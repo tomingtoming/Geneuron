@@ -10,7 +10,7 @@ pub struct World {
     pub generation: usize,
     pub elapsed_time: f32,
     pub food_manager: FoodManager,
-    world_bounds: (f32, f32),
+    pub world_bounds: (f32, f32),
     repopulation_timer: f32,
     population_check_interval: f32,
 }
@@ -112,7 +112,7 @@ impl World {
             // Check reproduction with improved conditions
             if creature.reproduction_cooldown <= 0.0 && creature.physics.energy >= 0.7 {
                 if let Some((mate_idx, _, _, _, _)) = nearby_creatures.iter()
-                    .filter(|other| creature.can_reproduce_with(other))
+                    .filter(|other| creature.can_reproduce_with(other, self.world_bounds))
                     .next()
                 {
                     reproduction_events.push((i, *mate_idx));

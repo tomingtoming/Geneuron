@@ -33,21 +33,19 @@ impl PhysicsState {
         // Update position with current velocity
         let new_pos = self.position + self.velocity * dt;
         
-        // Improved boundary handling with smooth bounce
-        if new_pos.x < 0.0 || new_pos.x > bounds.0 {
-            self.velocity.x *= -0.8;
-            // Add slight rotation on bounce
-            self.rotation_momentum += if self.velocity.x > 0.0 { -0.2 } else { 0.2 };
-            self.position.x = new_pos.x.clamp(0.0, bounds.0);
+        // トーラス構造の処理（境界を超えた時にワープ）
+        if new_pos.x < 0.0 {
+            self.position.x = new_pos.x + bounds.0;
+        } else if new_pos.x > bounds.0 {
+            self.position.x = new_pos.x - bounds.0;
         } else {
             self.position.x = new_pos.x;
         }
-        
-        if new_pos.y < 0.0 || new_pos.y > bounds.1 {
-            self.velocity.y *= -0.8;
-            // Add slight rotation on bounce
-            self.rotation_momentum += if self.velocity.y > 0.0 { 0.2 } else { -0.2 };
-            self.position.y = new_pos.y.clamp(0.0, bounds.1);
+
+        if new_pos.y < 0.0 {
+            self.position.y = new_pos.y + bounds.1;
+        } else if new_pos.y > bounds.1 {
+            self.position.y = new_pos.y - bounds.1;
         } else {
             self.position.y = new_pos.y;
         }
@@ -114,14 +112,55 @@ impl PhysicsState {
         rotation_cost * dt  // Rotation cost
     }
 
-    pub fn distance_to(&self, other: &na::Point2<f32>) -> f32 {
-        na::distance(&self.position, other)
+    pub fn distance_to(&self, other: &na::Point2<f32>, bounds: (f32, f32)) -> f32 {
+        // トーラス構造を考慮した最短距離の計算
+        let mut dx = (other.x - self.position.x).abs();
+        let mut dy = (other.y - self.position.y).abs();
+        
+        // X軸方向の最短距離
+        if dx > bounds.0 / 2.0 {
+            dx = bounds.0 - dx;
+        }
+        
+        // Y軸方向の最短距離
+        if dy > bounds.1 / 2.0 {
+            dy = bounds.1 - dy;
+        }
+        
+        (dx * dx + dy * dy).sqrt()
     }
 
-    pub fn direction_to(&self, target: &na::Point2<f32>) -> (f32, f32) {
-        let direction = target - self.position;
+    pub fn direction_to(&self, target: &na::Point2<f32>, bounds: (f32, f32)) -> (f32, f32) {
+        // トーラス構造を考慮した最短距離と方向の計算
+        let mut dx = target.x - self.position.x;
+        let mut dy = target.y - self.position.y;
+
+        // X軸方向の最短距離を計算
+        if dx.abs() > bounds.0 / 2.0 {
+            if dx > 0.0 {
+                dx = dx - bounds.0;
+            } else {
+                dx = dx + bounds.0;
+            }
+        }
+
+        // Y軸方向の最短距離を計算
+        if dy.abs() > bounds.1 / 2.0 {
+            if dy > 0.0 {
+                dy = dy - bounds.1;
+            } else {
+                dy = dy + bounds.1;
+            }
+        }
+
+        let direction = na::Vector2::new(dx, dy);
         let distance = direction.norm();
-        let target_angle = direction.y.atan2(direction.x);
+        
+        if distance == 0.0 {
+            return (0.0, 0.0);
+        }
+
+        let target_angle = dy.atan2(dx);
         let mut angle_diff = (target_angle - self.rotation).rem_euclid(2.0 * std::f32::consts::PI);
         
         // Normalize to [-PI, PI] for shortest turn
