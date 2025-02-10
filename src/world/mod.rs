@@ -19,8 +19,8 @@ impl World {
     pub fn new(width: f32, height: f32) -> Self {
         let world_bounds = (width, height);
 
-        // Create initial population
-        let creatures = (0..50).map(|_| {
+        // 広い世界に合わせて初期生物数を増やす
+        let creatures = (0..150).map(|_| {  // 50から150に増加
             let brain = Box::new(FeedForwardNetwork::new(9, 4));
             let mut creature = Creature::new(brain);
             creature.physics.position = na::Point2::new(
@@ -30,8 +30,8 @@ impl World {
             creature
         }).collect();
 
-        // Initialize food manager
-        let food_manager = FoodManager::new(world_bounds, 40, 50);
+        // より多くの食物を生成
+        let food_manager = FoodManager::new(world_bounds, 120, 150);  // 40,50から120,150に増加
 
         World {
             creatures,
@@ -185,9 +185,9 @@ impl World {
             }
         }
         
-        // Limit maximum population to prevent explosion
-        if self.creatures.len() > 100 {
-            self.creatures.truncate(100);
+        // 最大生物数の制限を緩和
+        if self.creatures.len() > 300 {  // 100から300に増加
+            self.creatures.truncate(300);
         }
         
         // Handle food updates

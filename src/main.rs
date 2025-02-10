@@ -14,6 +14,10 @@ use nalgebra as na;
 const WINDOW_WIDTH: f32 = 800.0;
 const WINDOW_HEIGHT: f32 = 600.0;
 
+// World constants
+const WORLD_WIDTH: f32 = 2400.0;  // ウィンドウの3倍
+const WORLD_HEIGHT: f32 = 1800.0;  // ウィンドウの3倍
+
 struct GameState {
     world: world::World,
     renderer: rendering::Renderer,
@@ -78,7 +82,7 @@ impl GameState {
     fn new(ctx: &mut Context) -> GameResult<GameState> {
         let (width, height) = ctx.gfx.drawable_size();
         Ok(GameState {
-            world: world::World::new(WINDOW_WIDTH, WINDOW_HEIGHT),
+            world: world::World::new(WORLD_WIDTH, WORLD_HEIGHT),  // より大きな世界サイズを使用
             renderer: rendering::Renderer::new(width, height),
             paused: false,
         })
