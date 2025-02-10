@@ -28,23 +28,20 @@ impl Renderer {
     }
 
     pub fn resize(&mut self, width: f32, height: f32) {
+        // 古いビューポート範囲を保存
+        let old_view_width = self.window_size.0 / self.zoom;
+        let old_view_height = self.window_size.1 / self.zoom;
+        let old_center_x = self.camera_offset.x + old_view_width / 2.0;
+        let old_center_y = self.camera_offset.y + old_view_height / 2.0;
+
         // ウィンドウサイズを更新
         self.window_size = (width, height);
 
-        // ズーム値を調整して、以前と同じ世界の部分が見えるようにする
-        let prev_view_width = self.window_size.0 / self.zoom;
-        let prev_view_height = self.window_size.1 / self.zoom;
-        let new_zoom_x = width / prev_view_width;
-        let new_zoom_y = height / prev_view_height;
-        self.zoom = self.zoom * new_zoom_x.min(new_zoom_y);
-
-        // カメラ位置を調整して、ビューポートの中心が変わらないようにする
-        let old_center_x = self.camera_offset.x + (prev_view_width / 2.0);
-        let old_center_y = self.camera_offset.y + (prev_view_height / 2.0);
+        // 新しいビューポートの中心を古いビューポートの中心に合わせる
         let new_view_width = width / self.zoom;
         let new_view_height = height / self.zoom;
-        self.camera_offset.x = old_center_x - (new_view_width / 2.0);
-        self.camera_offset.y = old_center_y - (new_view_height / 2.0);
+        self.camera_offset.x = old_center_x - new_view_width / 2.0;
+        self.camera_offset.y = old_center_y - new_view_height / 2.0;
     }
 
     pub fn select_creature(&mut self, index: Option<usize>) {
@@ -197,13 +194,29 @@ impl Renderer {
         self.update_camera(world);
         let mut canvas = Canvas::from_frame(ctx, Color::BLACK);
         
-        // カメラオフセットを考慮したビューポート設定
+        // ビューポートの設定を修正
+        let view_width = self.window_size.0 / self.zoom;
+        let view_height = self.window_size.1 / self.zoom;
         canvas.set_screen_coordinates(graphics::Rect::new(
-            self.camera_offset.x, 
-            self.camera_offset.y, 
-            self.window_size.0 / self.zoom, 
-            self.window_size.1 / self.zoom,
+            self.camera_offset.x,
+            self.camera_offset.y,
+            view_width,
+            view_height,
         ));
+
+        // ビューポートの範囲をデバッグ表示（開発用）
+        let viewport_border = Mesh::new_rectangle(
+            ctx,
+            graphics::DrawMode::stroke(2.0),
+            graphics::Rect::new(
+                self.camera_offset.x,
+                self.camera_offset.y,
+                view_width,
+                view_height
+            ),
+            Color::YELLOW,
+        )?;
+        canvas.draw(&viewport_border, DrawParam::default());
 
         // Draw food sources
         for food in &world.food_manager.foods {

@@ -88,16 +88,15 @@ impl GameState {
     }
 
     fn select_creature_at(&mut self, position: na::Point2<f32>) {
-        // Convert window coordinates to world coordinates
-        let world_x = self.renderer.camera_offset.x + position.x;
-        let world_y = self.renderer.camera_offset.y + position.y;
+        // Convert window coordinates to world coordinates, considering zoom
+        let world_x = self.renderer.camera_offset.x + position.x / self.renderer.zoom;
+        let world_y = self.renderer.camera_offset.y + position.y / self.renderer.zoom;
         let world_pos = na::Point2::new(world_x, world_y);
 
         let selected_index = self.world.creatures.iter()
             .enumerate()
             .filter(|(_, creature)| {
-                // トーラス構造を考慮した距離計算
-                creature.physics.distance_to(&world_pos, self.world.world_bounds) < 20.0  // 選択範囲を広げる
+                creature.physics.distance_to(&world_pos, self.world.world_bounds) < 20.0
             })
             .map(|(index, _)| index)
             .next();
