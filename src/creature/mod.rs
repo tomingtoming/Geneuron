@@ -207,10 +207,10 @@ impl Creature {
             (energy, _, _) if energy < 0.5 => {
                 Color::new(0.3, 0.3, 1.0, 1.0)  // Lighter blue for somewhat hungry
             },
-            (_, _, Some((_, distance))) if distance < 50.0 => {
+            (_, _, Some((_, &distance))) if distance < 50.0 => {
                 Color::new(0.0, 1.0, 0.0, 1.0)  // Green for close group behavior
             },
-            (_, _, Some((_, distance))) if distance < 100.0 => {
+            (_, _, Some((_, &distance))) if distance < 100.0 => {
                 Color::new(0.5, 1.0, 0.5, 1.0)  // Light green for moderate group behavior
             },
             _ => {

@@ -15,7 +15,6 @@ pub struct World {
 
 impl World {
     pub fn new(width: f32, height: f32) -> Self {
-        let mut rng = thread_rng();
         let world_bounds = (width, height);
 
         // Create initial population with updated neural network size (9 inputs)
@@ -132,7 +131,7 @@ impl World {
         if self.creatures.len() < 10 {
             let needed = 10 - self.creatures.len();
             for _ in 0..needed {
-                let brain = Box::new(FeedForwardNetwork::new(7, 4));
+                let brain = Box::new(FeedForwardNetwork::new(9, 4));  // Updated from 7 to 9 inputs
                 let mut new_creature = Creature::new(brain);
                 new_creature.physics.energy = 1.0;
                 self.creatures.push(new_creature);
