@@ -64,18 +64,53 @@ impl Renderer {
         if self.following_selected {
             if let Some(selected_idx) = self.selected_creature {
                 if let Some(creature) = world.creatures.get(selected_idx) {
-                    // Calculate desired camera position
-                    let target_x = creature.physics.position.x - self.window_size.0 / (2.0 * self.zoom);
-                    let target_y = creature.physics.position.y - self.window_size.1 / (2.0 * self.zoom);
+                    let view_width = self.window_size.0 / self.zoom;
+                    let view_height = self.window_size.1 / self.zoom;
 
-                    // Limit camera position to world bounds
-                    let max_x = world.world_bounds.0 - self.window_size.0 / self.zoom;
-                    let max_y = world.world_bounds.1 - self.window_size.1 / self.zoom;
+                    // 生物を中心にしたいビューポートの位置を計算
+                    let target_x = creature.physics.position.x - view_width / 2.0;
+                    let target_y = creature.physics.position.y - view_height / 2.0;
 
-                    self.camera_offset = Point2::new(
-                        target_x.clamp(0.0, max_x),
-                        target_y.clamp(0.0, max_y)
-                    );
+                    // カメラを必要最小限だけ移動させる
+                    let dx = if target_x < self.camera_offset.x {
+                        let diff = self.camera_offset.x - target_x;
+                        if diff > world.world_bounds.0 / 2.0 {
+                            world.world_bounds.0 - diff
+                        } else {
+                            -diff
+                        }
+                    } else if target_x > self.camera_offset.x {
+                        let diff = target_x - self.camera_offset.x;
+                        if diff > world.world_bounds.0 / 2.0 {
+                            -(world.world_bounds.0 - diff)
+                        } else {
+                            diff
+                        }
+                    } else {
+                        0.0
+                    };
+
+                    let dy = if target_y < self.camera_offset.y {
+                        let diff = self.camera_offset.y - target_y;
+                        if diff > world.world_bounds.1 / 2.0 {
+                            world.world_bounds.1 - diff
+                        } else {
+                            -diff
+                        }
+                    } else if target_y > self.camera_offset.y {
+                        let diff = target_y - self.camera_offset.y;
+                        if diff > world.world_bounds.1 / 2.0 {
+                            -(world.world_bounds.1 - diff)
+                        } else {
+                            diff
+                        }
+                    } else {
+                        0.0
+                    };
+
+                    // カメラ位置を更新
+                    self.camera_offset.x = (self.camera_offset.x + dx).rem_euclid(world.world_bounds.0);
+                    self.camera_offset.y = (self.camera_offset.y + dy).rem_euclid(world.world_bounds.1);
                 }
             }
         }
