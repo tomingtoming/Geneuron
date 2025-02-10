@@ -32,6 +32,7 @@ impl Food {
     }
 }
 
+#[allow(dead_code)]
 impl FoodManager {
     pub fn new(world_bounds: (f32, f32), min_count: usize, max_count: usize) -> Self {
         let mut manager = FoodManager {
