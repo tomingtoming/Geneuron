@@ -168,6 +168,11 @@ impl World {
             }
         }
         
+        // Limit maximum population to prevent explosion
+        if self.creatures.len() > 100 {
+            self.creatures.truncate(100);
+        }
+        
         // Handle food updates
         food_to_remove.sort_unstable_by(|a, b| b.cmp(a));
         food_to_remove.dedup();
