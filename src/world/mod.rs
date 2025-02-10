@@ -1,5 +1,4 @@
 use nalgebra as na;
-use rand::prelude::*;
 
 use crate::creature::{Creature, Gender};
 use crate::neural::FeedForwardNetwork;

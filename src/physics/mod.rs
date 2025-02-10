@@ -62,7 +62,7 @@ impl PhysicsState {
         let new_velocity = self.velocity * base_inertia + force * (1.0 - base_inertia);
         let current_speed = new_velocity.norm();
         
-        if (current_speed > max_speed) {
+        if current_speed > max_speed {
             self.velocity = new_velocity * (max_speed / current_speed);
         } else {
             self.velocity = new_velocity;
