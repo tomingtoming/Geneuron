@@ -15,7 +15,7 @@ impl Renderer {
     pub fn new(width: f32, height: f32) -> Self {
         Renderer {
             window_size: (width, height),
-            zoom: 1.0,
+            zoom: 0.5,  // デフォルトのズームを1.0から0.5に変更（より広い視野）
             selected_creature: None,
             camera_offset: Point2::new(0.0, 0.0),
             following_selected: false,
@@ -23,7 +23,8 @@ impl Renderer {
     }
 
     pub fn set_zoom(&mut self, zoom: f32) {
-        self.zoom = zoom;
+        // より広い範囲でズーム可能に
+        self.zoom = zoom.clamp(0.2, 2.0);  // max zoom を5.0から2.0に変更
     }
 
     pub fn resize(&mut self, width: f32, height: f32) {
@@ -47,10 +48,17 @@ impl Renderer {
         if self.following_selected {
             if let Some(selected_idx) = self.selected_creature {
                 if let Some(creature) = world.creatures.get(selected_idx) {
-                    // カメラを選択中の生物の位置に設定
+                    // Calculate desired camera position
+                    let target_x = creature.physics.position.x - self.window_size.0 / (2.0 * self.zoom);
+                    let target_y = creature.physics.position.y - self.window_size.1 / (2.0 * self.zoom);
+
+                    // Limit camera position to world bounds
+                    let max_x = world.world_bounds.0 - self.window_size.0 / self.zoom;
+                    let max_y = world.world_bounds.1 - self.window_size.1 / self.zoom;
+
                     self.camera_offset = Point2::new(
-                        creature.physics.position.x - self.window_size.0 / (2.0 * self.zoom),
-                        creature.physics.position.y - self.window_size.1 / (2.0 * self.zoom)
+                        target_x.clamp(0.0, max_x),
+                        target_y.clamp(0.0, max_y)
                     );
                 }
             }
