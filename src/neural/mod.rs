@@ -39,13 +39,13 @@ impl Neural for FeedForwardNetwork {
 
     fn mutate(&mut self, mutation_rate: f32) {
         let mut rng = thread_rng();
-        
+
         for weight in self.weights.iter_mut() {
             if rng.gen::<f32>() < mutation_rate {
                 *weight += rng.gen_range(-0.5..0.5);
             }
         }
-        
+
         for bias in self.bias.iter_mut() {
             if rng.gen::<f32>() < mutation_rate {
                 *bias += rng.gen_range(-0.5..0.5);
@@ -62,21 +62,21 @@ impl Neural for FeedForwardNetwork {
 
     fn apply_genome(&mut self, genome: &[f32]) -> usize {
         let mut idx = 0;
-        
+
         for weight in self.weights.iter_mut() {
             if idx < genome.len() {
                 *weight = genome[idx];
                 idx += 1;
             }
         }
-        
+
         for bias in self.bias.iter_mut() {
             if idx < genome.len() {
                 *bias = genome[idx];
                 idx += 1;
             }
         }
-        
+
         idx
     }
 

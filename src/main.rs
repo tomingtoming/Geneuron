@@ -1,13 +1,13 @@
-mod neural;
 mod creature;
-mod physics;
-mod world;
-mod rendering;
 mod food;
+mod neural;
+mod physics;
+mod rendering;
+mod world;
 
-use ggez::{Context, GameResult};
 use ggez::event::{self, EventHandler};
 use ggez::winit::event::VirtualKeyCode;
+use ggez::{Context, GameResult};
 use nalgebra as na;
 
 // Window constants
@@ -15,8 +15,8 @@ const WINDOW_WIDTH: f32 = 800.0;
 const WINDOW_HEIGHT: f32 = 600.0;
 
 // World constants
-const WORLD_WIDTH: f32 = 2400.0;  // ウィンドウの3倍
-const WORLD_HEIGHT: f32 = 1800.0;  // ウィンドウの3倍
+const WORLD_WIDTH: f32 = 2400.0; // ウィンドウの3倍
+const WORLD_HEIGHT: f32 = 1800.0; // ウィンドウの3倍
 
 struct GameState {
     world: world::World,
@@ -33,10 +33,10 @@ impl EventHandler for GameState {
 
         // Smooth zoom control
         if ctx.keyboard.is_key_pressed(VirtualKeyCode::Z) {
-            self.renderer.set_zoom((self.renderer.zoom * 1.05).min(5.0));  // Limit max zoom
+            self.renderer.set_zoom((self.renderer.zoom * 1.05).min(5.0)); // Limit max zoom
         }
         if ctx.keyboard.is_key_pressed(VirtualKeyCode::X) {
-            self.renderer.set_zoom((self.renderer.zoom * 0.95).max(0.2));  // Limit min zoom
+            self.renderer.set_zoom((self.renderer.zoom * 0.95).max(0.2)); // Limit min zoom
         }
 
         // Toggle follow mode with F key
@@ -45,7 +45,10 @@ impl EventHandler for GameState {
         }
 
         // Select creature with left mouse click
-        if ctx.mouse.button_pressed(ggez::input::mouse::MouseButton::Left) {
+        if ctx
+            .mouse
+            .button_pressed(ggez::input::mouse::MouseButton::Left)
+        {
             let mouse_pos = ctx.mouse.position();
             let world_mouse_pos = na::Point2::new(
                 mouse_pos.x * self.renderer.zoom,
@@ -55,7 +58,10 @@ impl EventHandler for GameState {
         }
 
         // Deselect creature with right mouse click
-        if ctx.mouse.button_pressed(ggez::input::mouse::MouseButton::Right) {
+        if ctx
+            .mouse
+            .button_pressed(ggez::input::mouse::MouseButton::Right)
+        {
             self.renderer.select_creature(None);
         }
 
@@ -72,7 +78,7 @@ impl EventHandler for GameState {
     }
 
     fn resize_event(&mut self, _ctx: &mut Context, width: f32, height: f32) -> GameResult {
-        self.renderer.resize(width, height);  // レンダラーのみリサイズを通知
+        self.renderer.resize(width, height); // レンダラーのみリサイズを通知
         Ok(())
     }
 }
@@ -81,7 +87,7 @@ impl GameState {
     fn new(ctx: &mut Context) -> GameResult<GameState> {
         let (width, height) = ctx.gfx.drawable_size();
         Ok(GameState {
-            world: world::World::new(WORLD_WIDTH, WORLD_HEIGHT),  // より大きな世界サイズを使用
+            world: world::World::new(WORLD_WIDTH, WORLD_HEIGHT), // より大きな世界サイズを使用
             renderer: rendering::Renderer::new(width, height),
             paused: false,
         })
@@ -93,10 +99,16 @@ impl GameState {
         let world_y = self.renderer.camera_offset.y + position.y / self.renderer.zoom;
         let world_pos = na::Point2::new(world_x, world_y);
 
-        let selected_index = self.world.creatures.iter()
+        let selected_index = self
+            .world
+            .creatures
+            .iter()
             .enumerate()
             .filter(|(_, creature)| {
-                creature.physics.distance_to(&world_pos, self.world.world_bounds) < 20.0
+                creature
+                    .physics
+                    .distance_to(&world_pos, self.world.world_bounds)
+                    < 20.0
             })
             .map(|(index, _)| index)
             .next();
@@ -108,12 +120,14 @@ fn main() -> GameResult {
     // Game configuration
     let cb = ggez::ContextBuilder::new("geneuron", "neuroevolution")
         .window_setup(ggez::conf::WindowSetup::default().title("Geneuron-RS"))
-        .window_mode(ggez::conf::WindowMode::default()
-            .dimensions(WINDOW_WIDTH, WINDOW_HEIGHT)
-            .resizable(true));
-    
+        .window_mode(
+            ggez::conf::WindowMode::default()
+                .dimensions(WINDOW_WIDTH, WINDOW_HEIGHT)
+                .resizable(true),
+        );
+
     let (mut ctx, event_loop) = cb.build()?;
-    
+
     // Create and run game state
     let state = GameState::new(&mut ctx)?;
     event::run(ctx, event_loop, state)
