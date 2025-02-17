@@ -1,5 +1,5 @@
-use ::rand::prelude::*;
-use ::rand::thread_rng;
+use ::rand::Rng;
+use ::rand::prelude::IteratorRandom;
 use macroquad::prelude::*;
 use nalgebra as na;
 
@@ -26,6 +26,8 @@ pub struct FoodManager {
     pub world_bounds: (f32, f32), // Make world_bounds public
     min_food_count: usize,
     max_food_count: usize,
+    spawn_timer: f32,
+    spawn_interval: f32,
 }
 
 impl FoodManager {
@@ -33,12 +35,12 @@ impl FoodManager {
         let max_food_count = 100;
         let min_food_count = 50;
         let mut foods = Vec::with_capacity(max_food_count);
-        let mut rng = thread_rng();
+        let mut rng = ::rand::thread_rng();
 
         // Initial food placement
         for _ in 0..min_food_count {
-            let x = rng.gen::<f32>() * world_bounds.0;
-            let y = rng.gen::<f32>() * world_bounds.1;
+            let x = rng.gen_range(0.0..world_bounds.0);
+            let y = rng.gen_range(0.0..world_bounds.1);
             foods.push(Food::new(na::Point2::new(x, y)));
         }
 
@@ -47,6 +49,8 @@ impl FoodManager {
             max_food_count,
             min_food_count,
             world_bounds,
+            spawn_timer: 0.0,
+            spawn_interval: 0.1,
         }
     }
 
@@ -62,23 +66,29 @@ impl FoodManager {
         }
     }
 
-    pub fn update(&mut self) {
-        let mut rng = thread_rng();
+    pub fn update(&mut self, dt: f32) {
+        self.spawn_timer += dt;
 
-        // Maintain minimum food count
-        while self.foods.len() < self.min_food_count {
-            self.spawn_food_at(na::Point2::new(
-                rng.gen_range(0.0..self.world_bounds.0),
-                rng.gen_range(0.0..self.world_bounds.1),
-            ));
-        }
+        if self.spawn_timer >= self.spawn_interval {
+            self.spawn_timer = 0.0;
+            let mut rng = ::rand::thread_rng();
 
-        // Occasionally spawn extra food up to max_food_count
-        if self.foods.len() < self.max_food_count && rng.gen::<f32>() < 0.1 {
-            self.spawn_food_at(na::Point2::new(
-                rng.gen_range(0.0..self.world_bounds.0),
-                rng.gen_range(0.0..self.world_bounds.1),
-            ));
+            // 既存の食料の位置から新しい食料を生成（より自然な分布）
+            if let Some(existing) = self.foods.iter().choose(&mut rng) {
+                let x = (existing.position.x + rng.gen_range(-50.0..50.0))
+                    .rem_euclid(self.world_bounds.0);
+                let y = (existing.position.y + rng.gen_range(-50.0..50.0))
+                    .rem_euclid(self.world_bounds.1);
+                
+                if self.foods.len() < 150 {  // 最大数を制限
+                    self.foods.push(Food::new(na::Point2::new(x, y)));
+                }
+            } else if self.foods.is_empty() {
+                // 食料が全くない場合はランダムな位置に生成
+                let x = rng.gen_range(0.0..self.world_bounds.0);
+                let y = rng.gen_range(0.0..self.world_bounds.1);
+                self.foods.push(Food::new(na::Point2::new(x, y)));
+            }
         }
     }
 

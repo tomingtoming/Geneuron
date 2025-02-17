@@ -1,7 +1,7 @@
-use ::rand::prelude::*;
-use ::rand::thread_rng;
-use macroquad::prelude::*;
 use nalgebra as na;
+use macroquad::prelude::*;
+use ::rand::Rng;
+use ::rand::prelude::ThreadRng;
 
 use crate::neural::{FeedForwardNetwork, Neural};
 use crate::physics::PhysicsBody;
@@ -35,8 +35,8 @@ pub enum BehaviorState {
 
 impl Creature {
     pub fn new(position: na::Point2<f32>) -> Self {
-        let mut rng = thread_rng();
-        let gender = if rng.gen::<bool>() {
+        let mut rng = ::rand::thread_rng();
+        let gender = if rng.gen_bool(0.5) {
             Gender::Male
         } else {
             Gender::Female
@@ -46,9 +46,11 @@ impl Creature {
             Gender::Female => PINK,
         };
 
+        let brain = FeedForwardNetwork::new(5, 4);
+        
         Creature {
             physics: PhysicsBody::new(position),
-            brain: FeedForwardNetwork::new(5, 4),
+            brain,
             color,
             mode_color: WHITE,
             age: 0.0,
@@ -62,7 +64,7 @@ impl Creature {
     pub fn reproduce_with(&self, other: &Creature) -> Creature {
         let mut child = Creature::new(self.physics.position);
         child.brain = self.brain.crossover_with(&other.brain);
-        child.brain.mutate();
+        child.brain.mutate(0.1); // Add mutation rate parameter
         child
     }
 
