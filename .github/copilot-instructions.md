@@ -62,11 +62,14 @@ When working with Rust code in this project, follow these guidelines:
    - Document complex algorithms
    - Explain non-obvious decisions
    - Keep comments up to date
+   - Use English consistently for all comments
+   - Translate any non-English comments during code review
 
 2. API Documentation:
    - Document public interfaces
    - Include examples
    - Explain panics and errors
+   - Use English consistently across all documentation
 
 ## Testing
 1. Unit Tests:
@@ -110,6 +113,21 @@ When working with Rust code in this project, follow these guidelines:
    - Document state transitions
    - Consider energy balance
    - Test edge cases
+
+## Instructions Maintenance
+1. Keep These Instructions Updated:
+   - Update this file whenever new conventions are established
+   - Include learnings from code reviews and discussions
+   - Document project-specific patterns as they emerge
+   - Reflect team's growing understanding of the codebase
+   - Track evolution of best practices
+
+2. Review Process:
+   - Review these instructions during major releases
+   - Update based on new team member feedback
+   - Incorporate lessons from bug fixes
+   - Add clarifications for common confusions
+   - Remove outdated guidelines
 
 Remember:
 - Code for maintainability first, then optimize
