@@ -20,17 +20,17 @@ impl World {
         let world_bounds = (width, height);
         let mut rng = ::rand::rng();
 
-        // 広い世界に合わせて初期生物数を増やす
+        // Increase initial number of creatures to match the larger world
         let creatures = (0..150)
             .map(|_| {
-                // 初期位置を生成
+                // Generate initial position
                 let position =
                     na::Point2::new(rng.random_range(0.0..width), rng.random_range(0.0..height));
                 Creature::new(position)
             })
             .collect();
 
-        // 食物マネージャーを初期化
+        // Initialize food manager
         let food_manager = FoodManager::new(world_bounds);
 
         World {
@@ -103,7 +103,7 @@ impl World {
             // Cap energy
             creature.physics.energy = creature.physics.energy.min(1.5);
 
-            // トーラス構造の処理
+            // Handle toroidal structure
             if creature.physics.position.x < 0.0 {
                 creature.physics.position.x += self.world_bounds.0;
             } else if creature.physics.position.x > self.world_bounds.0 {
@@ -139,9 +139,9 @@ impl World {
                 .find_nearby_food(&creature.physics.position, 20.0);
             for (food_idx, _food) in nearby_foods {
                 if !food_to_remove.contains(&food_idx) {
-                    // 余分な括弧を削除
+                    // Remove extra parentheses
                     food_to_remove.push(food_idx);
-                    creature.physics.energy += 0.3; // 固定値のエネルギー増加に変更
+                    creature.physics.energy += 0.3; // Changed to fixed energy increase
                     creature.fitness += 1.0;
                 }
             }
@@ -150,7 +150,7 @@ impl World {
         // Handle reproduction
         let mut new_creatures = Vec::new();
         for (parent1_idx, parent2_idx) in reproduction_events {
-            if parent1_idx < self.creatures.len() && parent2_idx < self.creatures.len() {
+            if (parent1_idx < self.creatures.len()) && (parent2_idx < self.creatures.len()) {
                 let parent1 = self.creatures[parent1_idx].clone();
                 let parent2 = self.creatures[parent2_idx].clone();
                 let mut child = parent1.reproduce_with(&parent2);
@@ -211,9 +211,9 @@ impl World {
             }
         }
 
-        // 最大生物数の制限を緩和
+        // Relaxed maximum creature limit
         if self.creatures.len() > 300 {
-            // 100から300に増加
+            // Increased from 100 to 300
             self.creatures.truncate(300);
         }
 
@@ -227,7 +227,7 @@ impl World {
         // Update food system
         self.food_manager.update(dt);
 
-        // トーラス構造の処理（食物）
+        // Handle toroidal structure (food)
         for food in &mut self.food_manager.foods {
             if food.position.x < 0.0 {
                 food.position.x += self.world_bounds.0;
@@ -249,13 +249,13 @@ impl World {
         let old_bounds = self.world_bounds;
         self.world_bounds = (width, height);
 
-        // 生物の位置を新しい境界に合わせてスケーリング
+        // Scale creature positions to match new boundaries
         for creature in &mut self.creatures {
             creature.physics.position.x = (creature.physics.position.x / old_bounds.0) * width;
             creature.physics.position.y = (creature.physics.position.y / old_bounds.1) * height;
         }
 
-        // 食物マネージャーのリサイズを呼び出し
+        // Call food manager resize
         self.food_manager.resize(width, height);
     }
 }

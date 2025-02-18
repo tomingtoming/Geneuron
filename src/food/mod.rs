@@ -76,7 +76,7 @@ impl FoodManager {
             self.spawn_timer = 0.0;
             let mut rng = ::rand::rng();
 
-            // 既存の食料の位置から新しい食料を生成（より自然な分布）
+            // Generate new food near existing food positions (for more natural distribution)
             if let Some(existing) = self.foods.iter().choose(&mut rng) {
                 let x = (existing.position.x + rng.random_range(-50.0..50.0))
                     .rem_euclid(self.world_bounds.0);
@@ -84,11 +84,11 @@ impl FoodManager {
                     .rem_euclid(self.world_bounds.1);
 
                 if self.foods.len() < 150 {
-                    // 最大数を制限
+                    // Limit maximum count
                     self.foods.push(Food::new(na::Point2::new(x, y)));
                 }
             } else if self.foods.is_empty() {
-                // 食料が全くない場合はランダムな位置に生成
+                // If no food exists, generate at random position
                 let x = rng.random_range(0.0..self.world_bounds.0);
                 let y = rng.random_range(0.0..self.world_bounds.1);
                 self.foods.push(Food::new(na::Point2::new(x, y)));
@@ -124,7 +124,7 @@ impl FoodManager {
     #[allow(dead_code)]
     pub fn update_positions(&mut self) {
         for food in &mut self.foods {
-            // トーラス構造の処理
+            // Handle toroidal structure
             if food.position.x < 0.0 {
                 food.position.x += self.world_bounds.0;
             } else if food.position.x > self.world_bounds.0 {

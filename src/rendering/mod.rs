@@ -6,15 +6,15 @@ pub struct Renderer {
     window_size: (f32, f32),
     pub zoom: f32,                    // Make zoom field public
     selected_creature: Option<usize>, // Add selected creature index
-    pub camera_offset: Point2<f32>,   // カメラの位置をパブリックに
-    following_selected: bool,         // 選択中の生物を追従するかどうか
+    pub camera_offset: Point2<f32>,   // Make camera position public
+    following_selected: bool,         // Whether to follow the selected creature
 }
 
 impl Renderer {
     pub fn new(width: f32, height: f32) -> Self {
         Renderer {
             window_size: (width, height),
-            zoom: 0.5, // デフォルトのズームを1.0から0.5に変更（より広い視野）
+            zoom: 0.5, // Changed default zoom from 1.0 to 0.5 (wider view)
             selected_creature: None,
             camera_offset: Point2::new(0.0, 0.0),
             following_selected: false,
@@ -22,21 +22,21 @@ impl Renderer {
     }
 
     pub fn set_zoom(&mut self, zoom: f32) {
-        // より広い範囲でズーム可能に
-        self.zoom = zoom.clamp(0.2, 2.0); // max zoom を5.0から2.0に変更
+        // Wider zoom range enabled
+        self.zoom = zoom.clamp(0.2, 2.0); // Changed max zoom from 5.0 to 2.0
     }
 
     pub fn resize(&mut self, width: f32, height: f32) {
-        // 古いビューポート範囲を保存
+        // Save old viewport range
         let old_view_width = self.window_size.0 / self.zoom;
         let old_view_height = self.window_size.1 / self.zoom;
         let old_center_x = self.camera_offset.x + old_view_width / 2.0;
         let old_center_y = self.camera_offset.y + old_view_height / 2.0;
 
-        // ウィンドウサイズを更新
+        // Update window size
         self.window_size = (width, height);
 
-        // 新しいビューポートの中心を古いビューポートの中心に合わせる
+        // Align the center of the new viewport with the center of the old viewport
         let new_view_width = width / self.zoom;
         let new_view_height = height / self.zoom;
         self.camera_offset.x = old_center_x - new_view_width / 2.0;
@@ -63,11 +63,11 @@ impl Renderer {
                     let view_width = self.window_size.0 / self.zoom;
                     let view_height = self.window_size.1 / self.zoom;
 
-                    // 生物を中心にしたいビューポートの位置を計算
+                    // Calculate the position of the viewport centered on the creature
                     let target_x = creature.physics.position.x - view_width / 2.0;
                     let target_y = creature.physics.position.y - view_height / 2.0;
 
-                    // カメラを必要最小限だけ移動させる
+                    // Move the camera only as much as necessary
                     let dx = if target_x < self.camera_offset.x {
                         let diff = self.camera_offset.x - target_x;
                         if diff > world.world_bounds.0 / 2.0 {
@@ -104,7 +104,7 @@ impl Renderer {
                         0.0
                     };
 
-                    // カメラ位置を更新
+                    // Update camera position
                     self.camera_offset.x =
                         (self.camera_offset.x + dx).rem_euclid(world.world_bounds.0);
                     self.camera_offset.y =

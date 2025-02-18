@@ -13,8 +13,8 @@ const WINDOW_WIDTH: f32 = 800.0;
 const WINDOW_HEIGHT: f32 = 600.0;
 
 // World constants
-const WORLD_WIDTH: f32 = 2400.0; // ウィンドウの3倍
-const WORLD_HEIGHT: f32 = 1800.0; // ウィンドウの3倍
+const WORLD_WIDTH: f32 = 2400.0; // 3 times the window width
+const WORLD_HEIGHT: f32 = 1800.0; // 3 times the window height
 
 struct GameState {
     world: world::World,
@@ -84,11 +84,11 @@ impl GameState {
             .iter()
             .enumerate()
             .filter(|(_, creature)| {
-                // トーラス構造を考慮した距離計算
+                // Distance calculation considering toroidal structure
                 creature
                     .physics
                     .distance_to(&world_pos, self.world.world_bounds)
-                    < 20.0 // 選択範囲を広げる
+                    < 20.0 // Increase selection range
             })
             .map(|(index, _)| index)
             .next();
