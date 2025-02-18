@@ -1,6 +1,6 @@
-use nalgebra as na;
-use macroquad::prelude::*;
 use ::rand::Rng;
+use macroquad::prelude::*;
+use nalgebra as na;
 
 use crate::neural::{FeedForwardNetwork, Neural};
 use crate::physics::PhysicsBody;
@@ -46,7 +46,7 @@ impl Creature {
         };
 
         let brain = FeedForwardNetwork::new(5, 4);
-        
+
         Creature {
             physics: PhysicsBody::new(position),
             brain,

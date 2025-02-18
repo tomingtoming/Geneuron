@@ -1,5 +1,5 @@
-use ::rand::Rng;
 use ::rand::prelude::IteratorRandom;
+use ::rand::Rng;
 use macroquad::prelude::*;
 use nalgebra as na;
 
@@ -82,8 +82,9 @@ impl FoodManager {
                     .rem_euclid(self.world_bounds.0);
                 let y = (existing.position.y + rng.random_range(-50.0..50.0))
                     .rem_euclid(self.world_bounds.1);
-                
-                if self.foods.len() < 150 {  // 最大数を制限
+
+                if self.foods.len() < 150 {
+                    // 最大数を制限
                     self.foods.push(Food::new(na::Point2::new(x, y)));
                 }
             } else if self.foods.is_empty() {

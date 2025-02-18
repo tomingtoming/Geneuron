@@ -1,8 +1,8 @@
 use crate::creature::{Creature, Gender};
 use crate::food::FoodManager;
-use nalgebra as na;
-use ::rand::Rng;
 use ::rand::prelude::IteratorRandom;
+use ::rand::Rng;
+use nalgebra as na;
 
 pub struct World {
     pub creatures: Vec<Creature>,
@@ -24,10 +24,8 @@ impl World {
         let creatures = (0..150)
             .map(|_| {
                 // 初期位置を生成
-                let position = na::Point2::new(
-                    rng.random_range(0.0..width),
-                    rng.random_range(0.0..height),
-                );
+                let position =
+                    na::Point2::new(rng.random_range(0.0..width), rng.random_range(0.0..height));
                 Creature::new(position)
             })
             .collect();
@@ -157,15 +155,13 @@ impl World {
                 let parent1 = self.creatures[parent1_idx].clone();
                 let parent2 = self.creatures[parent2_idx].clone();
                 let mut child = parent1.reproduce_with(&parent2);
-                
+
                 // Set child's position near parents
                 let parent_pos = self.creatures[parent1_idx].physics.position;
                 let mut rng = ::rand::rng();
                 let child_pos = na::Point2::new(
-                    (parent_pos.x + rng.random_range(-50.0..50.0))
-                        .rem_euclid(self.world_bounds.0),
-                    (parent_pos.y + rng.random_range(-50.0..50.0))
-                        .rem_euclid(self.world_bounds.1)
+                    (parent_pos.x + rng.random_range(-50.0..50.0)).rem_euclid(self.world_bounds.0),
+                    (parent_pos.y + rng.random_range(-50.0..50.0)).rem_euclid(self.world_bounds.1),
                 );
                 child.physics.position = child_pos;
                 new_creatures.push(child);
@@ -208,7 +204,7 @@ impl World {
                             rng.random_range(0.0..self.world_bounds.1),
                         )
                     };
-                    
+
                     let mut creature = Creature::new(position);
                     creature.physics.energy = 1.0;
                     self.creatures.push(creature);

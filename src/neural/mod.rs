@@ -1,5 +1,5 @@
-use nalgebra::{DMatrix, DVector};
 use ::rand::Rng;
+use nalgebra::{DMatrix, DVector};
 
 // Neural network trait for different implementations
 pub trait Neural {
@@ -11,7 +11,7 @@ pub trait Neural {
 }
 
 // Simple feedforward neural network implementation
-#[derive(Clone)]  // Add Clone derive
+#[derive(Clone)] // Add Clone derive
 pub struct FeedForwardNetwork {
     weights: DMatrix<f32>,
     bias: DVector<f32>,
