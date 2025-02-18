@@ -19,28 +19,28 @@ pub struct FeedForwardNetwork {
 
 impl FeedForwardNetwork {
     pub fn new(inputs: usize, outputs: usize) -> Self {
-        let mut rng = ::rand::thread_rng();
+        let mut rng = ::rand::rng();
         FeedForwardNetwork {
-            weights: DMatrix::from_fn(inputs, outputs, |_, _| rng.gen_range(-1.0..1.0)),
-            bias: DVector::from_fn(outputs, |_, _| rng.gen_range(-1.0..1.0)),
+            weights: DMatrix::from_fn(inputs, outputs, |_, _| rng.random_range(-1.0..1.0)),
+            bias: DVector::from_fn(outputs, |_, _| rng.random_range(-1.0..1.0)),
         }
     }
 
     pub fn crossover_with(&self, other: &FeedForwardNetwork) -> FeedForwardNetwork {
-        let mut rng = ::rand::thread_rng();
+        let mut rng = ::rand::rng();
         let mut new_weights = self.weights.clone();
         let mut new_bias = self.bias.clone();
 
         // Crossover weights
         for (i, val) in new_weights.iter_mut().enumerate() {
-            if rng.gen_bool(0.5) {
+            if rng.random::<bool>() {
                 *val = other.weights[i];
             }
         }
 
         // Crossover biases
         for (i, val) in new_bias.iter_mut().enumerate() {
-            if rng.gen_bool(0.5) {
+            if rng.random::<bool>() {
                 *val = other.bias[i];
             }
         }
@@ -64,17 +64,17 @@ impl Neural for FeedForwardNetwork {
     }
 
     fn mutate(&mut self, mutation_rate: f32) {
-        let mut rng = ::rand::thread_rng();
+        let mut rng = ::rand::rng();
 
         for weight in self.weights.iter_mut() {
-            if rng.gen_bool(mutation_rate.into()) {
-                *weight += rng.gen_range(-0.5..0.5);
+            if rng.random_bool(mutation_rate.into()) {
+                *weight += rng.random_range(-0.5..0.5);
             }
         }
 
         for bias in self.bias.iter_mut() {
-            if rng.gen_bool(mutation_rate.into()) {
-                *bias += rng.gen_range(-0.5..0.5);
+            if rng.random_bool(mutation_rate.into()) {
+                *bias += rng.random_range(-0.5..0.5);
             }
         }
     }

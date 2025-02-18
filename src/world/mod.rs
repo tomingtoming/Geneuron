@@ -18,15 +18,15 @@ pub struct World {
 impl World {
     pub fn new(width: f32, height: f32) -> Self {
         let world_bounds = (width, height);
-        let mut rng = ::rand::thread_rng();
+        let mut rng = ::rand::rng();
 
         // 広い世界に合わせて初期生物数を増やす
         let creatures = (0..150)
             .map(|_| {
                 // 初期位置を生成
                 let position = na::Point2::new(
-                    rng.gen_range(0.0..width),
-                    rng.gen_range(0.0..height),
+                    rng.random_range(0.0..width),
+                    rng.random_range(0.0..height),
                 );
                 Creature::new(position)
             })
@@ -140,7 +140,7 @@ impl World {
             let nearby_foods = self
                 .food_manager
                 .find_nearby_food(&creature.physics.position, 20.0);
-            for (food_idx, food) in nearby_foods {
+            for (food_idx, _food) in nearby_foods {
                 if !food_to_remove.contains(&food_idx) {
                     // 余分な括弧を削除
                     food_to_remove.push(food_idx);
@@ -160,11 +160,11 @@ impl World {
                 
                 // Set child's position near parents
                 let parent_pos = self.creatures[parent1_idx].physics.position;
-                let mut rng = ::rand::thread_rng();
+                let mut rng = ::rand::rng();
                 let child_pos = na::Point2::new(
-                    (parent_pos.x + rng.gen_range(-50.0..50.0))
+                    (parent_pos.x + rng.random_range(-50.0..50.0))
                         .rem_euclid(self.world_bounds.0),
-                    (parent_pos.y + rng.gen_range(-50.0..50.0))
+                    (parent_pos.y + rng.random_range(-50.0..50.0))
                         .rem_euclid(self.world_bounds.1)
                 );
                 child.physics.position = child_pos;
@@ -187,7 +187,7 @@ impl World {
         self.repopulation_timer += dt;
         if self.repopulation_timer >= self.population_check_interval {
             self.repopulation_timer = 0.0;
-            let mut rng = ::rand::thread_rng();
+            let mut rng = ::rand::rng();
 
             // Only add new creatures if population is critically low
             if self.creatures.len() < 10 {
@@ -197,15 +197,15 @@ impl World {
                 for _ in 0..max_new {
                     let position = if let Some(existing) = self.creatures.iter().choose(&mut rng) {
                         na::Point2::new(
-                            (existing.physics.position.x + rng.gen_range(-50.0..50.0))
+                            (existing.physics.position.x + rng.random_range(-50.0..50.0))
                                 .rem_euclid(self.world_bounds.0),
-                            (existing.physics.position.y + rng.gen_range(-50.0..50.0))
+                            (existing.physics.position.y + rng.random_range(-50.0..50.0))
                                 .rem_euclid(self.world_bounds.1),
                         )
                     } else {
                         na::Point2::new(
-                            rng.gen_range(0.0..self.world_bounds.0),
-                            rng.gen_range(0.0..self.world_bounds.1),
+                            rng.random_range(0.0..self.world_bounds.0),
+                            rng.random_range(0.0..self.world_bounds.1),
                         )
                     };
                     

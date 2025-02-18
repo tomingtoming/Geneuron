@@ -24,7 +24,9 @@ impl Food {
 pub struct FoodManager {
     pub foods: Vec<Food>,
     pub world_bounds: (f32, f32), // Make world_bounds public
+    #[allow(dead_code)]
     min_food_count: usize,
+    #[allow(dead_code)]
     max_food_count: usize,
     spawn_timer: f32,
     spawn_interval: f32,
@@ -35,12 +37,12 @@ impl FoodManager {
         let max_food_count = 100;
         let min_food_count = 50;
         let mut foods = Vec::with_capacity(max_food_count);
-        let mut rng = ::rand::thread_rng();
+        let mut rng = ::rand::rng();
 
         // Initial food placement
         for _ in 0..min_food_count {
-            let x = rng.gen_range(0.0..world_bounds.0);
-            let y = rng.gen_range(0.0..world_bounds.1);
+            let x = rng.random_range(0.0..world_bounds.0);
+            let y = rng.random_range(0.0..world_bounds.1);
             foods.push(Food::new(na::Point2::new(x, y)));
         }
 
@@ -54,6 +56,7 @@ impl FoodManager {
         }
     }
 
+    #[allow(dead_code)]
     pub fn spawn_food_at(&mut self, position: na::Point2<f32>) {
         if self.foods.len() < self.max_food_count {
             self.foods.push(Food::new(position));
@@ -71,13 +74,13 @@ impl FoodManager {
 
         if self.spawn_timer >= self.spawn_interval {
             self.spawn_timer = 0.0;
-            let mut rng = ::rand::thread_rng();
+            let mut rng = ::rand::rng();
 
             // 既存の食料の位置から新しい食料を生成（より自然な分布）
             if let Some(existing) = self.foods.iter().choose(&mut rng) {
-                let x = (existing.position.x + rng.gen_range(-50.0..50.0))
+                let x = (existing.position.x + rng.random_range(-50.0..50.0))
                     .rem_euclid(self.world_bounds.0);
-                let y = (existing.position.y + rng.gen_range(-50.0..50.0))
+                let y = (existing.position.y + rng.random_range(-50.0..50.0))
                     .rem_euclid(self.world_bounds.1);
                 
                 if self.foods.len() < 150 {  // 最大数を制限
@@ -85,8 +88,8 @@ impl FoodManager {
                 }
             } else if self.foods.is_empty() {
                 // 食料が全くない場合はランダムな位置に生成
-                let x = rng.gen_range(0.0..self.world_bounds.0);
-                let y = rng.gen_range(0.0..self.world_bounds.1);
+                let x = rng.random_range(0.0..self.world_bounds.0);
+                let y = rng.random_range(0.0..self.world_bounds.1);
                 self.foods.push(Food::new(na::Point2::new(x, y)));
             }
         }
@@ -117,6 +120,7 @@ impl FoodManager {
         self.world_bounds = (width, height);
     }
 
+    #[allow(dead_code)]
     pub fn update_positions(&mut self) {
         for food in &mut self.foods {
             // トーラス構造の処理

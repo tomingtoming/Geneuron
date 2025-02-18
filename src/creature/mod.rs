@@ -1,7 +1,6 @@
 use nalgebra as na;
 use macroquad::prelude::*;
 use ::rand::Rng;
-use ::rand::prelude::ThreadRng;
 
 use crate::neural::{FeedForwardNetwork, Neural};
 use crate::physics::PhysicsBody;
@@ -35,8 +34,8 @@ pub enum BehaviorState {
 
 impl Creature {
     pub fn new(position: na::Point2<f32>) -> Self {
-        let mut rng = ::rand::thread_rng();
-        let gender = if rng.gen_bool(0.5) {
+        let mut rng = ::rand::rng();
+        let gender = if rng.random::<bool>() {
             Gender::Male
         } else {
             Gender::Female
