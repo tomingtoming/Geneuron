@@ -87,6 +87,7 @@ When working with Rust code in this project, follow these guidelines:
    - Review release notes
    - Test thoroughly after updates
    - Follow semver guidelines
+   - Keep GitHub Actions versions up to date (use latest stable versions)
 
 2. Code Reviews:
    - Check for deprecated API usage
