@@ -1,5 +1,7 @@
 # Geneuron
 
+[![Build](https://github.com/tomingtoming/geneuron/actions/workflows/build.yml/badge.svg)](https://github.com/tomingtoming/geneuron/actions/workflows/build.yml)
+
 Geneuron is a neural evolution simulation where creatures evolve over time to adapt to their environment. The simulation uses neural networks to control the behavior of the creatures, and they can reproduce, feed, and interact with each other.
 
 ## Features
