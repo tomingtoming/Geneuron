@@ -68,7 +68,7 @@ impl World {
                     (
                         j,
                         c.physics.position,
-                        c.gender.clone(),
+                        c.gender,
                         c.reproduction_cooldown,
                         c.physics.energy,
                     )
@@ -125,8 +125,7 @@ impl World {
             if creature.reproduction_cooldown <= 0.0 && creature.physics.energy >= 0.7 {
                 if let Some((mate_idx, _, _, _, _)) = nearby_creatures
                     .iter()
-                    .filter(|&other| creature.can_reproduce_with(other))
-                    .next()
+                    .find(|&other| creature.can_reproduce_with(other))
                 {
                     reproduction_events.push((i, *mate_idx));
                     creature.reproduction_cooldown = 15.0;
