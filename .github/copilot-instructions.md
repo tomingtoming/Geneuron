@@ -1,76 +1,119 @@
-# GitHub Copilot Instructions Record
+# Rust Development Best Practices
 
-## 2024-01-XX: Rustコードベースの改善
+When working with Rust code in this project, follow these guidelines:
 
-### 修正した問題点
-1. randクレートの非推奨APIの更新
-   - `thread_rng()`の使用方法を修正（`::`修飾子の追加）
-   - `gen` -> `random`
-   - `gen_range` -> `random_range`
-   - `gen_bool` -> `random_bool`
-
-2. 型の不一致とメソッドの引数の修正
-   - `Creature::mutate`に突然変異率パラメータを追加
-   - `FoodManager::new`の引数を適切な型に修正
-   - `energy_value`を固定値（0.3）に変更
-
-3. クレート依存関係の改善
-   - `rand`クレートの曖昧さを解消（macroquadとの競合）
-   - `IteratorRandom`トレイトを使用してVec型の`choose`メソッドを実装
-
-### ベストプラクティス
-1. randクレートの使用
+## API Usage
+1. Use complete path qualification for external crates to avoid conflicts:
    ```rust
    use ::rand::Rng;
    use ::rand::prelude::IteratorRandom;
    ```
 
-2. イテレータの選択メソッド
-   ```rust
-   // Vec<T>からのランダムな要素の選択
-   if let Some(item) = items.iter().choose(&mut rng) {
-       // 処理
-   }
-   ```
+2. Prefer modern API methods over deprecated ones:
+   - Use `random::<T>()` instead of `gen()`
+   - Use `random_range()` instead of `gen_range()`
+   - Use `random_bool()` instead of `gen_bool()`
 
-3. トレイトの実装
-   ```rust
-   // 必要なトレイトをスコープに入れる
-   use ::rand::prelude::IteratorRandom;
-   ```
+3. Handle type conversions explicitly:
+   - Use `.into()` for safe type conversions
+   - Use explicit type annotations when needed
+   - Handle floating-point conversions carefully (f32 to f64)
 
-### エラー処理とデバッグのヒント
-1. クレートの曖昧さエラー
-   - 完全修飾パス（`::`）を使用してクレートを指定
-   - 競合するインポートを避ける
+## Code Organization
+1. Dead Code Management:
+   - Add `#[allow(dead_code)]` for intentionally unused items
+   - Document why code is kept despite being unused
+   - Keep potential future use cases in mind
 
-2. 型の不一致エラー
-   - 関数シグネチャを確認
-   - 型変換（`.into()`）を適切に使用
+2. Variable Naming:
+   - Use `_variable` prefix for intentionally unused variables
+   - Use descriptive names that reflect purpose
+   - Follow Rust naming conventions
 
-3. トレイトの実装エラー
-   - 必要なトレイトをスコープに入れているか確認
-   - トレイトの要件を満たしているか確認
+3. Memory Management:
+   - Pre-allocate vectors when size is known: `Vec::with_capacity(size)`
+   - Minimize cloning, prefer references when possible
+   - Use appropriate ownership models
 
-### パフォーマンスの考慮事項
-1. ベクターの容量管理
-   ```rust
-   Vec::with_capacity(max_size)  // 事前に容量を確保
-   ```
+## Error Handling
+1. Pattern Matching:
+   - Use `if let` for single pattern matches
+   - Use `match` for multiple patterns
+   - Handle edge cases explicitly
 
-2. クローンの最小化
-   - 必要な場合のみクローンを使用
-   - 参照を活用して不要なコピーを避ける
+2. Error Propagation:
+   - Use `?` operator for Result types
+   - Provide meaningful error messages
+   - Consider wrapping external errors
 
-### 将来の改善点
-1. 非推奨APIの更新
-   - `thread_rng()`の代替手段の検討
-   - 新しいRNG APIへの移行
+## Performance
+1. Collection Management:
+   - Use appropriate collection types
+   - Pre-allocate when possible
+   - Consider using iterators over loops
 
-2. エラー処理の改善
-   - よりロバストなエラー処理の実装
-   - パニック処理の追加
+2. Algorithm Optimization:
+   - Profile before optimizing
+   - Use efficient data structures
+   - Consider space-time tradeoffs
 
-3. パフォーマンス最適化
-   - メモリ使用量の最適化
-   - 計算の効率化
+## Documentation
+1. Code Comments:
+   - Document complex algorithms
+   - Explain non-obvious decisions
+   - Keep comments up to date
+
+2. API Documentation:
+   - Document public interfaces
+   - Include examples
+   - Explain panics and errors
+
+## Testing
+1. Unit Tests:
+   - Test edge cases
+   - Test error conditions
+   - Use appropriate test helpers
+
+2. Integration Tests:
+   - Test major features
+   - Test interactions between components
+   - Simulate real-world scenarios
+
+## Maintenance
+1. Keep Dependencies Updated:
+   - Review release notes
+   - Test thoroughly after updates
+   - Follow semver guidelines
+
+2. Code Reviews:
+   - Check for deprecated API usage
+   - Verify error handling
+   - Consider performance implications
+
+## Project-Specific Guidelines
+1. Simulation Parameters:
+   - Use constants for magic numbers
+   - Document parameter effects
+   - Consider configuration options
+
+2. Physics Calculations:
+   - Use appropriate floating-point types
+   - Handle edge cases
+   - Document assumptions
+
+3. Neural Network:
+   - Document network architecture
+   - Handle numerical stability
+   - Consider optimization techniques
+
+4. Creature Behavior:
+   - Document state transitions
+   - Consider energy balance
+   - Test edge cases
+
+Remember:
+- Code for maintainability first, then optimize
+- Document unusual or complex decisions
+- Consider future extensibility
+- Test thoroughly, especially edge cases
+- Profile before optimizing
