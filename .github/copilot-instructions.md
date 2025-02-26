@@ -1,8 +1,12 @@
-# Rust Development Best Practices
+# Geneuron Development Guidelines
+
+This document outlines the development practices and coding standards for the Geneuron project.
+
+## Rust Development Best Practices
 
 When working with Rust code in this project, follow these guidelines:
 
-## API Usage
+### API Usage
 1. Use complete path qualification for external crates to avoid conflicts:
    ```rust
    use ::rand::Rng;
@@ -19,7 +23,7 @@ When working with Rust code in this project, follow these guidelines:
    - Use explicit type annotations when needed
    - Handle floating-point conversions carefully (f32 to f64)
 
-## Code Organization
+### Code Organization
 1. Dead Code Management:
    - Add `#[allow(dead_code)]` for intentionally unused items
    - Document why code is kept despite being unused
@@ -35,7 +39,7 @@ When working with Rust code in this project, follow these guidelines:
    - Minimize cloning, prefer references when possible
    - Use appropriate ownership models
 
-## Error Handling
+### Error Handling
 1. Pattern Matching:
    - Use `if let` for single pattern matches
    - Use `match` for multiple patterns
@@ -46,7 +50,7 @@ When working with Rust code in this project, follow these guidelines:
    - Provide meaningful error messages
    - Consider wrapping external errors
 
-## Performance
+### Performance
 1. Collection Management:
    - Use appropriate collection types
    - Pre-allocate when possible
@@ -57,7 +61,7 @@ When working with Rust code in this project, follow these guidelines:
    - Use efficient data structures
    - Consider space-time tradeoffs
 
-## Documentation
+### Documentation
 1. Code Comments:
    - Document complex algorithms
    - Explain non-obvious decisions
@@ -71,7 +75,7 @@ When working with Rust code in this project, follow these guidelines:
    - Explain panics and errors
    - Use English consistently across all documentation
 
-## Testing
+### Testing
 1. Unit Tests:
    - Test edge cases
    - Test error conditions
@@ -82,19 +86,14 @@ When working with Rust code in this project, follow these guidelines:
    - Test interactions between components
    - Simulate real-world scenarios
 
-## Maintenance
+### Maintenance
 1. Keep Dependencies Updated:
    - Review release notes
    - Test thoroughly after updates
    - Follow semver guidelines
    - Keep GitHub Actions versions up to date (use latest stable versions)
 
-2. Code Reviews:
-   - Check for deprecated API usage
-   - Verify error handling
-   - Consider performance implications
-
-## Project-Specific Guidelines
+### Project-Specific Guidelines
 1. Simulation Parameters:
    - Use constants for magic numbers
    - Document parameter effects
@@ -115,24 +114,33 @@ When working with Rust code in this project, follow these guidelines:
    - Consider energy balance
    - Test edge cases
 
-## Instructions Maintenance
-1. Keep These Instructions Updated:
-   - Update this file whenever new conventions are established
-   - Include learnings from code reviews and discussions
-   - Document project-specific patterns as they emerge
-   - Reflect team's growing understanding of the codebase
-   - Track evolution of best practices
+## Recent Development Context
 
-2. Review Process:
-   - Review these instructions during major releases
-   - Update based on new team member feedback
-   - Incorporate lessons from bug fixes
-   - Add clarifications for common confusions
-   - Remove outdated guidelines
+### Camera Management
+- Camera position has constraints to prevent the world from disappearing when zoomed out
+- Added the `constrain_camera()` function to enforce these boundaries
+- Added a `reset_view()` function triggered by the R key
+- Camera follows selected creatures when in follow mode (toggle with F key)
 
-Remember:
-- Code for maintainability first, then optimize
-- Document unusual or complex decisions
-- Consider future extensibility
-- Test thoroughly, especially edge cases
-- Profile before optimizing
+### User Interface
+- Zoom controls: Z/X keys and mouse wheel
+- Pause simulation: Space key
+- Select creatures: Left click
+- Deselect: Right click
+- Move camera: Shift+drag or middle mouse button
+- Reset view: R key
+- Follow selected creature: F key
+
+### Visual Feedback
+- Selected creatures highlighted in yellow
+- Hover effect for creatures under cursor
+- Energy levels displayed as colored rings
+- Grid system for spatial reference
+- Status information displayed in top-left corner
+- Controls help displayed in bottom-left corner
+- Detailed creature information displayed when selected
+
+### World Wrapping
+- The simulation world is toroidal (wraps around edges)
+- Drawing functions account for this with wrapped rendering
+- Camera movement considers shortest paths in wrapped space
