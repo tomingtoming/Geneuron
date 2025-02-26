@@ -28,6 +28,8 @@ When working with Rust code in this project, follow these guidelines:
    - Add `#[allow(dead_code)]` for intentionally unused items
    - Document why code is kept despite being unused
    - Keep potential future use cases in mind
+   - Regularly review and clean up dead code that's no longer needed
+   - Consider using feature flags for experimental or in-development features
 
 2. Variable Naming:
    - Use `_variable` prefix for intentionally unused variables
@@ -38,6 +40,11 @@ When working with Rust code in this project, follow these guidelines:
    - Pre-allocate vectors when size is known: `Vec::with_capacity(size)`
    - Minimize cloning, prefer references when possible
    - Use appropriate ownership models
+
+4. Conditional Compilation:
+   - Use `#[cfg(feature = "...")]` for optional features
+   - Use `#[cfg(test)]` for test-only code
+   - Document conditional code sections clearly
 
 ### Error Handling
 1. Pattern Matching:
@@ -68,23 +75,34 @@ When working with Rust code in this project, follow these guidelines:
    - Keep comments up to date
    - Use English consistently for all comments
    - Translate any non-English comments during code review
+   - Include justification for special test handling or workarounds
 
 2. API Documentation:
    - Document public interfaces
    - Include examples
    - Explain panics and errors
    - Use English consistently across all documentation
+   - Document when methods are intended only for testing
 
 ### Testing
 1. Unit Tests:
    - Test edge cases
    - Test error conditions
    - Use appropriate test helpers
+   - Focus on testing behavior rather than implementation details
+   - Avoid hardcoded magic values that make tests brittle
+   - Use descriptive assertion messages to clarify test failures
 
 2. Integration Tests:
    - Test major features
    - Test interactions between components
    - Simulate real-world scenarios
+
+3. Test-Specific Code:
+   - Use `#[cfg(test)]` for test-only code implementation
+   - Keep test-specific behavior separate from production code
+   - Document why test-specific implementations exist
+   - Consider refactoring tests that depend on implementation details
 
 ### Maintenance
 1. Keep Dependencies Updated:
@@ -144,3 +162,26 @@ When working with Rust code in this project, follow these guidelines:
 - The simulation world is toroidal (wraps around edges)
 - Drawing functions account for this with wrapped rendering
 - Camera movement considers shortest paths in wrapped space
+
+## Recent Development Lessons
+
+### Test and Implementation Separation
+- Use `#[cfg(test)]` to isolate test-specific code
+- Keep production code clean from test-specific workarounds
+- Consider refactoring tests that depend on implementation details
+
+### Camera Dragging Behavior
+- Camera movement follows the "grabbing the world" mental model
+- Dragging in one direction moves the camera view in the opposite direction
+- This is consistent with standard camera navigation in most applications
+
+### Dead Code Management
+- Methods marked with `#[allow(dead_code)]` should include documentation explaining:
+  - Why the code exists but isn't currently used
+  - When the code might be used in the future
+  - Any dependencies that need to be implemented before using it
+
+### Error Diagnostics
+- Include descriptive error messages in assertions
+- Use panic messages that clearly explain the failure condition
+- Compare expected vs. actual values in test failure messages

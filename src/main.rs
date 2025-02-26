@@ -193,6 +193,10 @@ impl GameState {
     }
 }
 
+// Add this line to include the camera test module
+#[cfg(test)]
+mod camera_test;
+
 fn window_conf() -> Conf {
     Conf {
         window_title: "Geneuron-RS".to_owned(),

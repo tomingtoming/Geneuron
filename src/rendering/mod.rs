@@ -36,23 +36,8 @@ impl Renderer {
     }
 
     pub async fn render(&self, world: &World, camera: &Camera) {
-        // Use the camera to set up the view
-        set_camera(&camera.get_macroquad_camera());
-
-        clear_background(BLACK);
-
         // Draw world grid for better navigation
         self.draw_grid(world.world_bounds);
-
-        // Draw viewport border
-        draw_rectangle_lines(
-            camera.position.x,
-            camera.position.y,
-            camera.viewport_width / camera.zoom,
-            camera.viewport_height / camera.zoom,
-            2.0,
-            YELLOW,
-        );
 
         // Draw food sources
         for food in &world.food_manager.foods {
@@ -63,7 +48,7 @@ impl Renderer {
         for (i, creature) in world.creatures.iter().enumerate() {
             // Creature body
             let is_selected = self.selected_creature == Some(i);
-            let is_hovered = self.hovered_creature == Some(i);
+            let is_hovered = self.hover_creature_id == Some(i);
             
             // Draw selection highlight first (underneath creature)
             if is_selected {
@@ -111,9 +96,6 @@ impl Renderer {
         // Status info with semi-transparent background
         self.draw_status_info(world, camera);
 
-        // Display help text for controls
-        self.draw_controls_help(camera);
-
         // Show detailed info for selected creature
         self.draw_creature_details(world, camera);
     }
@@ -125,6 +107,7 @@ impl Renderer {
         color: Color,
         world_bounds: (f32, f32),
     ) {
+        // Get camera view bounds
         let view_left = self.camera_offset.x;
         let view_right = self.camera_offset.x + self.window_size.0 / self.zoom;
         let view_top = self.camera_offset.y;
@@ -287,54 +270,58 @@ impl Renderer {
             camera.position.x + 10.0,
             camera.position.y + 10.0,
             220.0,
-            100.0,
+            120.0,
             Color::new(0.0, 0.0, 0.0, 0.7),
         );
         
+        let follow_status = if camera.is_following() {
+            "Following creature"
+        } else if camera.has_focus_points() {
+            "Tracking top creatures"
+        } else {
+            "Free camera"
+        };
+        
         let status = format!(
-            "Generation: {}\nPopulation: {}\nTime: {:.1}s\nFPS: {}",
+            "Generation: {}\nPopulation: {}\nTime: {:.1}s\nFPS: {}\nZoom: {:.1}x\n{}",
             world.generation,
             world.creatures.len(),
             world.elapsed_time,
             get_fps(),
+            camera.zoom,
+            follow_status
         );
         
         draw_text(
             &status,
             camera.position.x + 20.0,
             camera.position.y + 35.0,
-            24.0,
+            20.0,
             WHITE,
         );
     }
     
-    fn draw_controls_help(&self, camera: &Camera) {
-        // Draw controls help in bottom left
-        let controls_text = "Controls:\nZ/X or Mouse Wheel: Zoom\nSpace: Pause\nF: Follow selected\nLeft Click: Select\nRight Click: Deselect\nShift+Drag: Move camera\nR: Reset view";
-        
-        draw_rectangle(
-            camera.position.x + 10.0,
-            camera.position.y + camera.viewport_height / camera.zoom - 140.0,
-            220.0,
-            130.0,
-            Color::new(0.0, 0.0, 0.0, 0.7),
-        );
-        
-        draw_text(
-            controls_text,
-            camera.position.x + 20.0,
-            camera.position.y + camera.viewport_height / camera.zoom - 120.0,
-            16.0,
-            WHITE,
-        );
+    #[allow(dead_code)]
+    fn draw_controls_help(&self, _camera: &Camera) {
+        // Implementation for future controls help display
     }
     
     fn draw_creature_details(&self, world: &World, camera: &Camera) {
         if let Some(selected_index) = self.selected_creature {
             if let Some(creature) = world.creatures.get(selected_index) {
+                let energy_status = if creature.physics.energy < 0.3 {
+                    "Low Energy"
+                } else if creature.physics.energy < 0.7 {
+                    "Moderate Energy"
+                } else {
+                    "High Energy"
+                };
+                
                 let details = format!(
-                    "Selected Creature\n---------------\nEnergy: {:.2}\nAge: {:.2}\nFitness: {:.2}\nState: {:?}\nSpeed: {:.2}\nPosition: ({:.0}, {:.0})\nGender: {:?}\n---------------\n{}",
+                    "Selected Creature #{}\n---------------\nEnergy: {:.2} ({})\nAge: {:.1}\nFitness: {:.1}\nState: {:?}\nSpeed: {:.1}\nPosition: ({:.0}, {:.0})\nGender: {:?}\n",
+                    selected_index,
                     creature.physics.energy,
+                    energy_status,
                     creature.age,
                     creature.fitness,
                     creature.behavior_state,
@@ -342,7 +329,6 @@ impl Renderer {
                     creature.physics.position.x,
                     creature.physics.position.y,
                     creature.gender,
-                    if camera.is_following() { "[Following]" } else { "" }
                 );
 
                 // Semi-transparent background
@@ -358,14 +344,26 @@ impl Renderer {
                     &details,
                     camera.position.x + camera.viewport_width / camera.zoom - 270.0,
                     camera.position.y + 40.0,
-                    20.0,  // Slightly smaller font
+                    18.0,  // Slightly smaller font
                     WHITE,
                 );
+                
+                // Add follow status indicator
+                if camera.is_following() {
+                    draw_text(
+                        "[Following]",
+                        camera.position.x + camera.viewport_width / camera.zoom - 270.0,
+                        camera.position.y + 260.0,
+                        20.0,
+                        YELLOW,
+                    );
+                }
             }
         }
     }
 
     pub fn set_hover_creature(&mut self, creature_id: Option<usize>) {
         self.hover_creature_id = creature_id;
+        self.hovered_creature = creature_id;
     }
 }
