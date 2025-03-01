@@ -2,186 +2,182 @@
 
 This document outlines the development practices and coding standards for the Geneuron project.
 
-## Rust Development Best Practices
+## TypeScript Development Best Practices
 
-When working with Rust code in this project, follow these guidelines:
+When working with TypeScript code in this project, follow these guidelines:
 
-### API Usage
-1. Use complete path qualification for external crates to avoid conflicts:
-   ```rust
-   use ::rand::Rng;
-   use ::rand::prelude::IteratorRandom;
-   ```
+### Type Safety
 
-2. Prefer modern API methods over deprecated ones:
-   - Use `random::<T>()` instead of `gen()`
-   - Use `random_range()` instead of `gen_range()`
-   - Use `random_bool()` instead of `gen_bool()`
+1. Use strict typing:
+   - Avoid `any` types whenever possible
+   - Define interfaces and types for all data structures
+   - Use generics for reusable components and functions
+   - Utilize TypeScript's utility types when appropriate (e.g., `Partial<T>`, `Pick<T>`, etc.)
 
-3. Handle type conversions explicitly:
-   - Use `.into()` for safe type conversions
-   - Use explicit type annotations when needed
-   - Handle floating-point conversions carefully (f32 to f64)
+2. Handle null/undefined consistently:
+   - Use optional chaining (`?.`) and nullish coalescing (`??`) operators
+   - Consider strict null checks in tsconfig
+   - Validate function inputs to prevent runtime errors
+
+3. Type Assertions:
+   - Prefer type guards (`if (typeof x === 'string')`) over type assertions (`as`)
+   - Use `as` only when you're confident about the type and TypeScript cannot infer it
+   - Document any unsafe type assertions
 
 ### Code Organization
-1. Dead Code Management:
-   - Add `#[allow(dead_code)]` for intentionally unused items
-   - Document why code is kept despite being unused
-   - Keep potential future use cases in mind
-   - Regularly review and clean up dead code that's no longer needed
-   - Consider using feature flags for experimental or in-development features
+
+1. Module Structure:
+   - Follow single responsibility principle
+   - Group related functionality in modules
+   - Use barrel exports (`index.ts`) for cleaner imports
+   - Keep file sizes manageable (consider splitting if > 300 lines)
 
 2. Variable Naming:
-   - Use `_variable` prefix for intentionally unused variables
-   - Use descriptive names that reflect purpose
-   - Follow Rust naming conventions
+   - Use camelCase for variables and functions
+   - Use PascalCase for classes, interfaces, types, and components
+   - Use ALL_CAPS for constants
+   - Prefix private class properties with `_`
 
 3. Memory Management:
-   - Pre-allocate vectors when size is known: `Vec::with_capacity(size)`
-   - Minimize cloning, prefer references when possible
-   - Use appropriate ownership models
-
-4. Conditional Compilation:
-   - Use `#[cfg(feature = "...")]` for optional features
-   - Use `#[cfg(test)]` for test-only code
-   - Document conditional code sections clearly
+   - Clean up resources in `useEffect` cleanup functions
+   - Dispose of Three.js objects when no longer needed
+   - Be mindful of closure-related memory leaks
+   - Release TensorFlow.js tensors with `tf.dispose()` or `tf.tidy()`
 
 ### Error Handling
-1. Pattern Matching:
-   - Use `if let` for single pattern matches
-   - Use `match` for multiple patterns
+
+1. Promise Handling:
+   - Use async/await with proper try/catch blocks
+   - Consider central error handling for API calls
+   - Provide meaningful error messages to users
+   - Log detailed errors for debugging
+
+2. Graceful Degradation:
    - Handle edge cases explicitly
+   - Provide fallbacks for missing features
+   - Check browser compatibility for advanced features
 
-2. Error Propagation:
-   - Use `?` operator for Result types
-   - Provide meaningful error messages
-   - Consider wrapping external errors
+### Performance Optimization
 
-### Performance
-1. Collection Management:
-   - Use appropriate collection types
-   - Pre-allocate when possible
-   - Consider using iterators over loops
+1. Rendering Performance:
+   - Use React's memo, useMemo, and useCallback appropriately
+   - Implement virtualization for long lists
+   - Optimize Three.js rendering with proper techniques
+   - Use efficient algorithms for simulation updates
 
-2. Algorithm Optimization:
-   - Profile before optimizing
-   - Use efficient data structures
-   - Consider space-time tradeoffs
+2. Neural Network Optimization:
+   - Batch operations with TensorFlow.js
+   - Use WebGL backend when available
+   - Consider smaller network architectures for real-time updates
+   - Use tf.tidy() for automatic tensor cleanup
 
 ### Documentation
+
 1. Code Comments:
    - Document complex algorithms
    - Explain non-obvious decisions
-   - Keep comments up to date
-   - Use English consistently for all comments
-   - Translate any non-English comments during code review
-   - Include justification for special test handling or workarounds
+   - Document parameters and return types (especially when not obvious from TypeScript)
+   - Include examples for complex functions
 
-2. API Documentation:
-   - Document public interfaces
-   - Include examples
-   - Explain panics and errors
-   - Use English consistently across all documentation
-   - Document when methods are intended only for testing
+2. Component Documentation:
+   - Document props with JSDoc comments
+   - Explain side effects
+   - Note any performance considerations
 
-### Testing
-1. Unit Tests:
-   - Test edge cases
-   - Test error conditions
-   - Use appropriate test helpers
-   - Focus on testing behavior rather than implementation details
-   - Avoid hardcoded magic values that make tests brittle
-   - Use descriptive assertion messages to clarify test failures
+## Project Architecture
 
-2. Integration Tests:
-   - Test major features
-   - Test interactions between components
-   - Simulate real-world scenarios
+The project follows a modular architecture with these major components:
 
-3. Test-Specific Code:
-   - Use `#[cfg(test)]` for test-only code implementation
-   - Keep test-specific behavior separate from production code
-   - Document why test-specific implementations exist
-   - Consider refactoring tests that depend on implementation details
+### Core Simulation
+- `neural/`: Neural network implementation using TensorFlow.js
+- `physics/`: Physics simulation including collision detection and movement
+- `creature/`: Creature behavior, reproduction, and genetics
+- `food/`: Food resources, spawning, and consumption
+- `world/`: World management, simulation loop, and environmental factors
 
-### Maintenance
-1. Keep Dependencies Updated:
-   - Review release notes
-   - Test thoroughly after updates
-   - Follow semver guidelines
-   - Keep GitHub Actions versions up to date (use latest stable versions)
-
-### Project-Specific Guidelines
-1. Simulation Parameters:
-   - Use constants for magic numbers
-   - Document parameter effects
-   - Consider configuration options
-
-2. Physics Calculations:
-   - Use appropriate floating-point types
-   - Handle edge cases
-   - Document assumptions
-
-3. Neural Network:
-   - Document network architecture
-   - Handle numerical stability
-   - Consider optimization techniques
-
-4. Creature Behavior:
-   - Document state transitions
-   - Consider energy balance
-   - Test edge cases
-
-## Recent Development Context
-
-### Camera Management
-- Camera position has constraints to prevent the world from disappearing when zoomed out
-- Added the `constrain_camera()` function to enforce these boundaries
-- Added a `reset_view()` function triggered by the R key
-- Camera follows selected creatures when in follow mode (toggle with F key)
+### Visualization
+- `rendering/`: Three.js rendering, camera management, and visual effects
 
 ### User Interface
-- Zoom controls: Z/X keys and mouse wheel
-- Pause simulation: Space key
-- Select creatures: Left click
-- Deselect: Right click
-- Move camera: Shift+drag or middle mouse button
-- Reset view: R key
-- Follow selected creature: F key
+- `components/`: React components for UI elements
+- `App.tsx`: Main application component that integrates simulation and UI
 
-### Visual Feedback
-- Selected creatures highlighted in yellow
-- Hover effect for creatures under cursor
-- Energy levels displayed as colored rings
-- Grid system for spatial reference
-- Status information displayed in top-left corner
-- Controls help displayed in bottom-left corner
-- Detailed creature information displayed when selected
+## Current State of Development
 
-### World Wrapping
-- The simulation world is toroidal (wraps around edges)
-- Drawing functions account for this with wrapped rendering
-- Camera movement considers shortest paths in wrapped space
+### Completed Features
+- Basic simulation environment with Three.js
+- Neural network implementation with TensorFlow.js
+- Creature behavior driven by neural networks
+- Food spawning and consumption mechanics
+- Creature reproduction and genetic inheritance
+- Basic UI for simulation control and stats display
 
-## Recent Development Lessons
+### In Progress
+- Performance optimization for large-scale simulations
+- Advanced visualization for neural networks
+- Improved creature behavior and sensory inputs
+- Enhanced UI with more detailed statistics and controls
 
-### Test and Implementation Separation
-- Use `#[cfg(test)]` to isolate test-specific code
-- Keep production code clean from test-specific workarounds
-- Consider refactoring tests that depend on implementation details
+### Future Development
+- Predator-prey relationships
+- Different species with specialized traits
+- Environmental challenges and seasonal changes
+- User-definable scenarios and configurations
+- Exportable/importable neural networks
 
-### Camera Dragging Behavior
-- Camera movement follows the "grabbing the world" mental model
-- Dragging in one direction moves the camera view in the opposite direction
-- This is consistent with standard camera navigation in most applications
+## Technology Stack Details
 
-### Dead Code Management
-- Methods marked with `#[allow(dead_code)]` should include documentation explaining:
-  - Why the code exists but isn't currently used
-  - When the code might be used in the future
-  - Any dependencies that need to be implemented before using it
+### TypeScript
+- Version: 5.x
+- Configuration: Strict mode enabled
+- Key features: Interfaces, generics, utility types
 
-### Error Diagnostics
-- Include descriptive error messages in assertions
-- Use panic messages that clearly explain the failure condition
-- Compare expected vs. actual values in test failure messages
+### Three.js
+- Used for 3D visualization and rendering
+- Custom shaders for visual effects
+- Performance optimizations for large numbers of entities
+
+### TensorFlow.js
+- Neural network architecture: Multi-layer perceptron
+- Uses WebGL acceleration when available
+- Implements custom training and mutation algorithms
+
+### React
+- Functional components with hooks
+- Context API for state management
+- Custom hooks for simulation interaction
+
+## Workflow Integration
+
+When working with Copilot:
+
+1. Add detailed JSDoc comments for better suggestions
+2. Specify types for function parameters and return values
+3. Break complex tasks into smaller functions with clear purpose
+4. Request complete implementations with proper error handling and type safety
+
+## Code Style Guidelines
+
+- Use 2-space indentation
+- Semicolons at the end of statements
+- Single quotes for strings
+- Trailing commas in multi-line arrays and objects
+- Meaningful variable names that reflect purpose
+- Avoid abbreviations unless very common
+- Maximum line length: 100 characters
+
+## Testing Strategy
+
+1. Unit Tests:
+   - Test core algorithms and utilities
+   - Use testing-library for React components
+   - Mock dependencies and external services
+
+2. Integration Tests:
+   - Test interactions between modules
+   - Ensure proper data flow through the system
+
+3. Performance Testing:
+   - Monitor frame rates for rendering
+   - Test with different simulation sizes
+   - Profile memory usage and optimize as needed
