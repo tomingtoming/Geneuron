@@ -193,66 +193,97 @@ When working with Copilot:
    - Consider multiple re-render cycles
    - Use `findBy*` queries instead of `getBy*` for elements that appear asynchronously
    - Add appropriate timeouts for async operations
+   - Mock requestAnimationFrame when dealing with animation or render timing
+   - Be aware that some state updates might require multiple render cycles
+   - Consider using waitFor with appropriate assertions for complex state changes
 
-2. Simulation Mocks
+2. DOM Element Selection
+   - Prefer more specific queries over general ones
+   - When dealing with text content split across elements, use custom matcher functions
+   - Use within() to scope queries to specific components
+   - Consider the component hierarchy when selecting elements
+   - Use getAllBy* when multiple elements might match and you need to filter
+
+3. Simulation Mocks
    - Mock the entire simulation lifecycle
    - Consider both synchronous and asynchronous callbacks
    - Ensure mocks match the real implementation's behavior
    - Validate callback registration and execution
    - Add appropriate logging in mocks for debugging
+   - Ensure mock callbacks return Promises when the real implementation does
+   - Consider the timing of callback registration and cleanup
+   - Mock complex state management (e.g., requestAnimationFrame, setTimeout)
+   - Add appropriate logging points for debugging state updates
+   - Implement proper cleanup in mock teardown
 
-3. Component Testing
-   - Test the complete render cycle
-   - Verify initial state and subsequent updates
-   - Use `data-testid` for reliable element selection
-   - Test component hierarchy and parent-child relationships
-   - Consider side effects and cleanup
+### Test Isolation
+1. State Management
+   - Reset all mocks between tests using beforeEach
+   - Clean up subscriptions and event listeners
+   - Reset any global state that might affect other tests
+   - Consider using separate describe blocks for related test cases
+   - Handle test-specific setup and teardown properly
 
-### Test Structure
-1. Initialization
+2. Test Independence
+   - Avoid sharing mutable state between tests
+   - Create fresh mock instances for each test
+   - Reset DOM state between tests
+   - Clean up any side effects from previous tests
+   - Consider test order independence
+
+### Debugging Test Failures
+1. Structured Approach
+   - Add strategic console.logs for state changes
+   - Use screen.debug() at key points to inspect DOM
+   - Check component lifecycle timing
+   - Verify mock function calls and their timing
+   - Log state updates and their effects
+
+2. Common Pitfalls
+   - Text content split across multiple elements
+   - Async state updates not properly waited for
+   - Race conditions in component mounting
+   - Incomplete mock implementations
+   - Missing cleanup in test teardown
+   - Incorrect component hierarchy assumptions
+
+### Test Utilities
+1. Custom Matchers
    ```typescript
-   test('component behavior', async () => {
-     // 1. Setup and render
-     const { debug } = render(<Component />);
-     
-     // 2. Wait for initial mounting
-     await act(async () => {
-       await new Promise(resolve => setTimeout(resolve, 100));
-     });
-     
-     // 3. Verify initial state
-     expect(screen.getByTestId('initial-element')).toBeInTheDocument();
-     
-     // 4. Trigger state changes
-     await act(async () => {
-       // Perform actions
-       await new Promise(resolve => setTimeout(resolve, 0));
-     });
-     
-     // 5. Verify updated state
-     const updatedElement = await screen.findByTestId('updated-element');
-     expect(updatedElement).toBeInTheDocument();
-   });
+   // Example: Text content matcher across elements
+   const getByTextContent = (container: HTMLElement, text: string) => {
+     const elements = container.querySelectorAll('*');
+     return Array.from(elements).find(element => 
+       element.textContent?.includes(text)
+     );
+   };
    ```
 
-2. Error Cases
-   - Test error states explicitly
-   - Mock error conditions in dependencies
-   - Verify error handling and recovery
-   - Test boundary conditions
+2. Helper Functions
+   ```typescript
+   // Example: Wait for multiple state updates
+   const waitForUpdates = async (timeout = 100) => {
+     await act(async () => {
+       await new Promise(resolve => setTimeout(resolve, timeout));
+     });
+   };
+   ```
 
-### Test Debugging
-1. Debug Strategies
-   - Use `screen.debug()` to inspect DOM state
-   - Add console.logs in key state changes
-   - Verify mock function calls
-   - Check component lifecycle timing
+### Best Practices for Complex Components
+1. Component Testing
+   - Test the complete lifecycle
+   - Verify all possible states
+   - Check error boundaries
+   - Test component interactions
+   - Validate cleanup on unmount
+   - Test with different prop combinations
 
-2. Common Issues
-   - Asynchronous state updates not waiting
-   - Mock implementations incomplete
-   - React rendering cycle timing
-   - Event propagation timing
+2. Integration Testing
+   - Test component interactions
+   - Verify data flow between components
+   - Test state synchronization
+   - Handle edge cases in integration
+   - Verify error propagation
 
 ## Component Development
 
@@ -375,3 +406,9 @@ Remember:
 - Consider multiple re-render cycles
 - Add proper cleanup
 - Document debugging approaches
+- Consider text content that might be split across elements
+- Use appropriate element queries based on context
+- Implement thorough cleanup in tests
+- Add strategic debug points
+- Handle all possible component states
+- Test error cases explicitly

@@ -1,5 +1,5 @@
-import { render, screen, fireEvent, within } from '@testing-library/react';
-import { vi, describe, test, expect } from 'vitest';
+import { render, screen, fireEvent, within, waitFor } from '@testing-library/react';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { act } from 'react';
 import App from './App';
 import { initializeSimulation } from './core/world/simulation';
@@ -35,11 +35,15 @@ vi.mock('./core/world/simulation', () => ({
           };
         }),
       };
-
       setTimeout(() => resolve(simulation), 0);
     });
   })
 }));
+
+// Reset mocks between tests to avoid state leakage
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 describe('App Component', () => {
   test('renders loading state initially', async () => {
@@ -109,35 +113,76 @@ describe('App Component', () => {
     const registeredCallback = simulation.setSelectedCreatureCallback.mock.calls[0][0];
     expect(registeredCallback).toBeDefined();
 
-    // Call the callback in an act block
-    await act(async () => {
-      await registeredCallback(mockCreature);
-    });
+    // Store original console.log for debugging
+    const originalConsoleLog = console.log;
 
-    // Wait for state updates to propagate
-    await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 100));
-    });
+    try {
+      // Add a debugging console.log
+      console.log = (...args) => {
+        originalConsoleLog(...args);
+      };
 
-    // Debug current DOM state
-    screen.debug();
+      // Simulate requestAnimationFrame for proper callback handling
+      const originalRAF = window.requestAnimationFrame;
+      window.requestAnimationFrame = (callback) => { 
+        callback(0);
+        return 0;
+      };
 
-    // Wait for the creature info to appear
-    const uiContainer = await screen.findByTestId('ui-container');
-    expect(uiContainer).toBeInTheDocument();
+      // Call the callback directly within an act block 
+      await act(async () => {
+        // Invoke the callback which should update state and trigger re-renders
+        await registeredCallback(mockCreature);
+        
+        // Additional wait to ensure state updates are processed
+        await new Promise(resolve => setTimeout(resolve, 0));
+      });
 
-    // Now look for the creature info
-    const creatureInfo = await screen.findByTestId('creature-info', {}, { timeout: 2000 });
-    expect(creatureInfo).toBeInTheDocument();
+      // Restore original requestAnimationFrame
+      window.requestAnimationFrame = originalRAF;
 
-    // Verify the content
-    expect(within(creatureInfo).getByText(/Selected Creature/i)).toBeInTheDocument();
-    expect(within(creatureInfo).getByText(/Generation: 2/)).toBeInTheDocument();
+      // Debugging the component state
+      console.log('Current UI after callback:', screen.queryByTestId('ui-container') ? 'UI container exists' : 'No UI container');
+      debug();
+
+      // Use a more comprehensive waitFor
+      await waitFor(() => {
+        const ui = screen.getByTestId('ui-container');
+        // Check if the creature info is a child of the UI container
+        const creatureInfo = ui.querySelector('[data-testid="creature-info"]');
+        expect(creatureInfo).not.toBeNull();
+      }, { timeout: 2000 });
+
+      // Now we can safely get the creature info element
+      const creatureInfo = screen.getByTestId('creature-info');
+      expect(creatureInfo).toBeInTheDocument();
+
+      // Check for content within the creature info component
+      expect(within(creatureInfo).getByText(/Selected Creature/i)).toBeInTheDocument();
+      
+      // Get all paragraphs within the creature info component
+      const paragraphs = creatureInfo.querySelectorAll('p');
+      const paragraphsArray = Array.from(paragraphs);
+      
+      // Look for the specific paragraph with Generation information
+      const generationParagraph = paragraphsArray.find(p => 
+        p.textContent && p.textContent.includes('Generation') && p.textContent.includes('2')
+      );
+      expect(generationParagraph).toBeTruthy();
+      
+      // Look for the specific paragraph with Energy information
+      const energyParagraph = paragraphsArray.find(p => 
+        p.textContent && p.textContent.includes('Energy') && p.textContent.includes('100')
+      );
+      expect(energyParagraph).toBeTruthy();
+    } finally {
+      // Restore console.log
+      console.log = originalConsoleLog;
+    }
   });
 
   test('handles simulation initialization error', async () => {
     vi.mocked(initializeSimulation).mockRejectedValueOnce(new Error('Initialization failed'));
-
     render(<App />);
     
     await act(async () => {
