@@ -181,3 +181,197 @@ When working with Copilot:
    - Monitor frame rates for rendering
    - Test with different simulation sizes
    - Profile memory usage and optimize as needed
+
+# Copilot Instructions for Geneuron Project
+
+## Testing Best Practices
+
+### Asynchronous Testing
+1. State Updates
+   - Always wrap React state updates in `act()`
+   - Give sufficient time for state updates to propagate
+   - Consider multiple re-render cycles
+   - Use `findBy*` queries instead of `getBy*` for elements that appear asynchronously
+   - Add appropriate timeouts for async operations
+
+2. Simulation Mocks
+   - Mock the entire simulation lifecycle
+   - Consider both synchronous and asynchronous callbacks
+   - Ensure mocks match the real implementation's behavior
+   - Validate callback registration and execution
+   - Add appropriate logging in mocks for debugging
+
+3. Component Testing
+   - Test the complete render cycle
+   - Verify initial state and subsequent updates
+   - Use `data-testid` for reliable element selection
+   - Test component hierarchy and parent-child relationships
+   - Consider side effects and cleanup
+
+### Test Structure
+1. Initialization
+   ```typescript
+   test('component behavior', async () => {
+     // 1. Setup and render
+     const { debug } = render(<Component />);
+     
+     // 2. Wait for initial mounting
+     await act(async () => {
+       await new Promise(resolve => setTimeout(resolve, 100));
+     });
+     
+     // 3. Verify initial state
+     expect(screen.getByTestId('initial-element')).toBeInTheDocument();
+     
+     // 4. Trigger state changes
+     await act(async () => {
+       // Perform actions
+       await new Promise(resolve => setTimeout(resolve, 0));
+     });
+     
+     // 5. Verify updated state
+     const updatedElement = await screen.findByTestId('updated-element');
+     expect(updatedElement).toBeInTheDocument();
+   });
+   ```
+
+2. Error Cases
+   - Test error states explicitly
+   - Mock error conditions in dependencies
+   - Verify error handling and recovery
+   - Test boundary conditions
+
+### Test Debugging
+1. Debug Strategies
+   - Use `screen.debug()` to inspect DOM state
+   - Add console.logs in key state changes
+   - Verify mock function calls
+   - Check component lifecycle timing
+
+2. Common Issues
+   - Asynchronous state updates not waiting
+   - Mock implementations incomplete
+   - React rendering cycle timing
+   - Event propagation timing
+
+## Component Development
+
+### State Management
+1. Component State
+   - Use appropriate state initialization
+   - Consider side effects of state updates
+   - Handle null/undefined states
+   - Implement proper cleanup
+
+2. Props Interface
+   - Define strict prop types
+   - Document required vs optional props
+   - Consider prop validation
+   - Use TypeScript utility types
+
+### Testing Considerations
+1. Component Design
+   - Add data-testid attributes
+   - Consider test requirements during development
+   - Implement testable interfaces
+   - Document testing requirements
+
+2. Debug Support
+   - Add meaningful console logs
+   - Consider development-only debugging features
+   - Document debugging approaches
+   - Include error boundaries
+
+## Project Organization
+
+### Test Files
+1. Structure
+   - Group related tests
+   - Separate mock implementations
+   - Share test utilities
+   - Maintain test data
+
+2. Naming
+   - Clear test descriptions
+   - Meaningful variable names
+   - Consistent file naming
+   - Group related tests
+
+### Code Quality
+1. Type Safety
+   - Use strict typing
+   - Define interfaces
+   - Document type assumptions
+   - Handle edge cases
+
+2. Error Handling
+   - Consistent error patterns
+   - Meaningful error messages
+   - Error recovery strategies
+   - Error boundaries
+
+## Simulation Testing
+
+### Mock Implementation
+1. Simulation State
+   - Mock core simulation features
+   - Handle async operations
+   - Maintain state consistency
+   - Implement cleanup
+
+2. Callbacks
+   - Register callbacks properly
+   - Handle callback timing
+   - Clean up callback references
+   - Test callback error cases
+
+### Integration Points
+1. Component Integration
+   - Test simulation-component interaction
+   - Verify data flow
+   - Test state synchronization
+   - Handle race conditions
+
+2. State Updates
+   - Coordinate multiple state updates
+   - Handle update timing
+   - Verify state consistency
+   - Test update sequences
+
+## Performance Considerations
+
+### Test Performance
+1. Test Execution
+   - Optimize test runtime
+   - Minimize unnecessary waits
+   - Clean up resources
+   - Handle test isolation
+
+2. Debugging Support
+   - Add performance markers
+   - Track timing issues
+   - Monitor resource usage
+   - Profile test execution
+
+## Documentation
+
+### Test Documentation
+1. Test Cases
+   - Document test purpose
+   - Explain complex scenarios
+   - Document assumptions
+   - Include examples
+
+2. Debug Guide
+   - Document common issues
+   - Include debug steps
+   - Add troubleshooting tips
+   - Maintain solutions
+
+Remember:
+- Always wrap React state updates in `act()`
+- Use `findBy*` for async elements
+- Implement complete mock lifecycles
+- Consider multiple re-render cycles
+- Add proper cleanup
+- Document debugging approaches

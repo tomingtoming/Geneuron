@@ -28,7 +28,7 @@ const CreatureInfo: React.FC<CreatureInfoProps> = ({ creature }) => {
   const formatNumber = (num: number) => Math.round(num * 100) / 100;
 
   return (
-    <div className="creature-info">
+    <div className="creature-info" data-testid="creature-info">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h3>Selected Creature</h3>
         <button onClick={() => setShowDetails(!showDetails)}>

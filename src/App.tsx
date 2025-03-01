@@ -68,8 +68,16 @@ function App() {
           simulationRef.current = simulation;
           
           // Set the callback to update the selected creature
-          simulation.setSelectedCreatureCallback((creature: any) => {
-            setSelectedCreature(creature);
+          simulation.setSelectedCreatureCallback((creature) => {
+            console.log('Selected creature:', creature);
+            // Use a Promise to ensure state update is processed
+            return new Promise<void>((resolve) => {
+              setSelectedCreature(creature);
+              // Wait for next render
+              requestAnimationFrame(() => {
+                requestAnimationFrame(resolve);
+              });
+            });
           });
           
           setIsInitializing(false);
@@ -189,7 +197,7 @@ function App() {
           </button>
         </div>
       ) : (
-        <div className="ui-container">
+        <div className="ui-container" style={{}} data-testid="ui-container">
           <StatsPanel stats={stats} />
           <ControlsPanel 
             isPaused={isPaused} 
@@ -200,24 +208,9 @@ function App() {
             onMutationRateChange={handleMutationRateChange}
             onFoodSpawnRateChange={handleFoodSpawnRateChange}
           />
-          {selectedCreature && (
-            <CreatureInfo creature={{
-              id: selectedCreature.id,
-              age: selectedCreature.age,
-              energy: selectedCreature.energy,
-              generation: selectedCreature.generation,
-              neuralNetwork: {
-                inputSize: 8,
-                outputSize: 3,
-                hiddenLayers: [12, 12],
-              },
-              position: selectedCreature.position,
-              velocity: selectedCreature.velocity,
-              rotation: selectedCreature.rotation,
-              fitness: selectedCreature.fitness,
-              children: selectedCreature.children,
-            }} />
-          )}
+          {selectedCreature ? (
+            <CreatureInfo creature={selectedCreature} />
+          ) : null}
         </div>
       )}
     </div>
