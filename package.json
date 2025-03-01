@@ -1,0 +1,49 @@
+{
+  "name": "geneuron",
+  "version": "0.1.0",
+  "description": "Neural Evolution Simulation",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tomingtoming/geneuron.git"
+  },
+  "keywords": [
+    "neural-network",
+    "evolution",
+    "simulation",
+    "tensorflow.js",
+    "three.js",
+    "webgpu"
+  ],
+  "author": "tomingtoming",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/tomingtoming/geneuron/issues"
+  },
+  "homepage": "https://github.com/tomingtoming/geneuron#readme",
+  "dependencies": {
+    "@tensorflow/tfjs": "^4.22.0",
+    "@tensorflow/tfjs-core": "^4.22.0",
+    "@types/uuid": "^10.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "three": "^0.162.0",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.64",
+    "@types/react-dom": "^18.2.21",
+    "@types/three": "^0.162.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "typescript": "^5.4.2",
+    "vite": "^5.1.6",
+    "vitest": "^1.2.2"
+  }
+}
