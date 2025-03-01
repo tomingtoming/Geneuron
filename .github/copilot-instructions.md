@@ -412,3 +412,321 @@ Remember:
 - Add strategic debug points
 - Handle all possible component states
 - Test error cases explicitly
+
+# Copilot Instructions for Geneuron Development
+
+This document outlines preferences and best practices for developing the Geneuron project, based on our learnings from development experience.
+
+## Project-Specific Guidelines
+
+### Implementation Strategy
+
+1. Initial Phase:
+   - Start with core simulation logic first
+   - Focus on type safety from the beginning
+   - Implement basic functionality before adding advanced features
+   - Use proper abstraction layers for easy refactoring
+
+2. Refactoring Approach:
+   - Make changes incrementally
+   - Remove deprecated code immediately to prevent confusion
+   - Keep related changes in separate commits
+   - Document major architectural decisions
+
+### Code Organization
+
+1. Directory Structure:
+   ```
+   src/
+     ├── components/     # React components
+     ├── core/          # Core simulation logic
+     │   ├── neural/    # Neural network implementation
+     │   ├── physics/   # Physics simulation
+     │   ├── creature/  # Creature behavior
+     │   ├── food/      # Food resources
+     │   └── world/     # World management
+     ├── rendering/     # Three.js visualization
+     └── utils/         # Shared utilities
+   ```
+
+2. Module Dependencies:
+   - Maintain clear dependency boundaries
+   - Avoid circular dependencies
+   - Use dependency injection for testing
+   - Keep implementation details private
+
+### Code Style
+
+1. TypeScript Best Practices:
+   ```typescript
+   // Good: Strong typing with clear interfaces
+   interface SimulationConfig {
+     mutationRate: number;
+     foodSpawnRate: number;
+     worldSize: number;
+   }
+
+   // Good: Proper error handling with type safety
+   function initializeSimulation(config: SimulationConfig): Promise<Simulation> {
+     try {
+       // Implementation
+     } catch (error) {
+       throw new SimulationError('Failed to initialize', { cause: error });
+     }
+   }
+   ```
+
+2. React Component Style:
+   ```typescript
+   // Good: Functional components with proper types
+   interface ControlsPanelProps {
+     isPaused: boolean;
+     onTogglePause: () => void;
+     mutationRate: number;
+     onMutationRateChange: (rate: number) => void;
+   }
+
+   const ControlsPanel: React.FC<ControlsPanelProps> = ({
+     isPaused,
+     onTogglePause,
+     mutationRate,
+     onMutationRateChange
+   }) => {
+     // Implementation
+   };
+   ```
+
+### Testing Strategy
+
+1. Test Organization:
+   ```typescript
+   describe('Simulation', () => {
+     // Good: Proper setup and cleanup
+     beforeEach(() => {
+       vi.useFakeTimers();
+     });
+
+     afterEach(() => {
+       vi.useRealTimers();
+       cleanup();
+     });
+
+     // Good: Clear test cases with proper async handling
+     test('initializes with correct configuration', async () => {
+       await act(async () => {
+         // Test implementation
+       });
+     });
+   });
+   ```
+
+2. Mock Implementation:
+   ```typescript
+   // Good: Proper type safety in mocks
+   const mockSimulation = vi.fn<[], Promise<Simulation>>()
+     .mockImplementation(async () => ({
+       // Implementation
+     }));
+   ```
+
+### Continuous Integration
+
+1. GitHub Actions:
+   - Run tests on all PRs
+   - Include type checking
+   - Automate deployment
+   - Check code formatting
+
+2. Quality Gates:
+   - All tests must pass
+   - No TypeScript errors
+   - Code coverage requirements
+   - Performance benchmarks
+
+## Development Workflow
+
+### Feature Implementation
+
+1. Planning Phase:
+   - Break down requirements
+   - Define interfaces first
+   - Plan test coverage
+   - Consider performance implications
+
+2. Implementation Phase:
+   - Write tests first
+   - Implement core logic
+   - Add UI components
+   - Document as you go
+
+### Code Review Guidelines
+
+1. Review Checklist:
+   - Type safety
+   - Error handling
+   - Performance considerations
+   - Test coverage
+   - Documentation
+   - Clean code principles
+
+2. Common Pitfalls:
+   - Memory leaks in Three.js/TensorFlow.js
+   - Async operation handling
+   - Resource cleanup
+   - Browser compatibility
+
+## Performance Optimization
+
+### Rendering Performance
+
+1. Three.js Best Practices:
+   ```typescript
+   // Good: Proper resource management
+   class Renderer {
+     private dispose() {
+       // Clean up Three.js resources
+       this.geometry.dispose();
+       this.material.dispose();
+       this.texture.dispose();
+     }
+   }
+   ```
+
+2. React Optimization:
+   ```typescript
+   // Good: Proper memoization
+   const MemoizedComponent = React.memo(({ data }) => {
+     const processedData = useMemo(() => processData(data), [data]);
+     return <div>{processedData}</div>;
+   });
+   ```
+
+### Neural Network Optimization
+
+1. TensorFlow.js Best Practices:
+   ```typescript
+   // Good: Proper tensor management
+   const predict = (inputs: number[]): number[] => {
+     return tf.tidy(() => {
+       const inputTensor = tf.tensor2d([inputs]);
+       const output = model.predict(inputTensor);
+       return Array.from(output.dataSync());
+     });
+   };
+   ```
+
+## Documentation Standards
+
+### Code Documentation
+
+1. Component Documentation:
+   ```typescript
+   /**
+    * Creature component represents a single entity in the simulation.
+    * 
+    * @param props - Component properties
+    * @param props.position - Initial position in the world
+    * @param props.neuralNetwork - Neural network controlling behavior
+    * 
+    * @example
+    * <Creature
+    *   position={{ x: 0, y: 0 }}
+    *   neuralNetwork={network}
+    * />
+    */
+   ```
+
+2. Algorithm Documentation:
+   ```typescript
+   /**
+    * Updates creature positions based on neural network outputs and physics.
+    * 
+    * Algorithm:
+    * 1. Get sensory inputs
+    * 2. Process through neural network
+    * 3. Apply outputs to movement
+    * 4. Handle collisions
+    * 
+    * @param creatures - Array of creatures to update
+    * @param deltaTime - Time since last update
+    */
+   ```
+
+## Error Handling
+
+### Error Types
+
+```typescript
+// Good: Custom error types for different scenarios
+class SimulationError extends Error {
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+    this.name = 'SimulationError';
+  }
+}
+
+class NeuralNetworkError extends Error {
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+    this.name = 'NeuralNetworkError';
+  }
+}
+```
+
+### Error Recovery
+
+```typescript
+// Good: Proper error handling with recovery
+async function initializeWithRetry(
+  maxAttempts = 3,
+  delayMs = 1000
+): Promise<Simulation> {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await initializeSimulation();
+    } catch (error) {
+      if (attempt === maxAttempts) throw error;
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+  }
+  throw new Error('Failed to initialize after maximum attempts');
+}
+```
+
+## Commit Message Standards
+
+1. Format:
+   ```
+   type(scope): subject
+
+   body
+
+   footer
+   ```
+
+2. Types:
+   - feat: New feature
+   - fix: Bug fix
+   - refactor: Code change that neither fixes a bug nor adds a feature
+   - test: Adding missing tests or correcting existing tests
+   - docs: Documentation only changes
+   - ci: Changes to CI configuration files and scripts
+   - perf: A code change that improves performance
+
+3. Examples:
+   ```
+   feat(neural): add mutation rate adjustment based on fitness
+
+   refactor(physics): optimize collision detection algorithm
+   
+   fix(rendering): prevent memory leak in Three.js cleanup
+   ```
+
+Remember:
+- Keep code modular and testable
+- Maintain strong type safety
+- Clean up resources properly
+- Document complex algorithms
+- Consider performance implications
+- Write meaningful tests
+- Use clear commit messages
