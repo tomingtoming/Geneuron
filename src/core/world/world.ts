@@ -26,6 +26,7 @@ export function setupWorld(scene: THREE.Scene) {
 
   // Add a ground plane grid for reference
   const gridHelper = new THREE.GridHelper(settings.size, settings.gridSize, 0x444444, 0x222222);
+  gridHelper.rotation.x = Math.PI / 2; // Rotate grid to XY plane for top-down view
   scene.add(gridHelper);
 
   // Add world boundaries visualization
@@ -35,7 +36,7 @@ export function setupWorld(scene: THREE.Scene) {
     boundaryEdges,
     new THREE.LineBasicMaterial({ color: 0x3a7ca5 })
   );
-  boundaryLines.position.z = -0.5;
+  boundaryLines.rotation.x = Math.PI / 2; // Align with grid
   scene.add(boundaryLines);
 
   // Methods to update world settings

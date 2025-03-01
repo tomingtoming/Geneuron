@@ -84,7 +84,8 @@ const ControlsPanel: React.FC<ControlsPanelProps> = ({
               Right-click: Deselect<br />
               Space: Pause/Resume<br />
               R: Reset view<br />
-              Mouse wheel: Zoom in/out
+              Mouse wheel/Pinch: Zoom in/out<br />
+              Drag: Pan view
             </p>
           </div>
         </div>

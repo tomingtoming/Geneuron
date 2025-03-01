@@ -128,9 +128,15 @@ export async function initializeSimulation(container: HTMLDivElement) {
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
-    controls.screenSpacePanning = false;
+    controls.screenSpacePanning = true;
     controls.minDistance = 5;
     controls.maxDistance = 50;
+    
+    // Set camera for top-down 2D view
+    controls.enableRotate = false;
+    camera.position.set(0, 0, 30); // Increased Z distance for better overview
+    camera.lookAt(0, 0, 0);
+    camera.up.set(0, 1, 0); // Ensure correct up vector for top-down view
     
     // Initialize world settings
     const world = setupWorld(scene);
@@ -253,8 +259,8 @@ export async function initializeSimulation(container: HTMLDivElement) {
           break;
         case 'r':
         case 'R':
-          // R: Reset camera
-          camera.position.set(0, 0, 15);
+          // R: Reset camera to top-down view
+          camera.position.set(0, 0, 30);
           camera.lookAt(0, 0, 0);
           break;
       }
@@ -546,8 +552,11 @@ export async function initializeSimulation(container: HTMLDivElement) {
           !selectedCreature.isDead && 
           activeCreatures.has(selectedCreature.id)
         ) {
-          camera.position.x = selectedCreature.position.x;
-          camera.position.y = selectedCreature.position.y;
+          camera.position.set(
+            selectedCreature.position.x,
+            selectedCreature.position.y,
+            30 // Maintain top-down view height
+          );
         }
       }
       
