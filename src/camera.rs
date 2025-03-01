@@ -184,7 +184,22 @@ impl Camera {
 
     /// Set target zoom level with smooth transition
     pub fn set_zoom(&mut self, zoom: f32) {
+        let old_zoom = self.target_zoom;
         self.target_zoom = zoom.clamp(self.min_zoom, self.max_zoom);
+        
+        // Only proceed if zoom actually changed
+        if (self.target_zoom - old_zoom).abs() > f32::EPSILON {
+            // Calculate the center of the current view in world coordinates
+            let view_center_x = self.position.x + self.viewport_width / (2.0 * self.zoom);
+            let view_center_y = self.position.y + self.viewport_height / (2.0 * self.zoom);
+            
+            // Adjust position to maintain the same center point after zoom
+            self.target_position.x = view_center_x - self.viewport_width / (2.0 * self.target_zoom);
+            self.target_position.y = view_center_y - self.viewport_height / (2.0 * self.target_zoom);
+            
+            // Apply camera constraints
+            self.constrain_target();
+        }
     }
 
     /// Update camera position and effects

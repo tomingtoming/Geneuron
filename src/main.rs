@@ -56,12 +56,15 @@ impl GameState {
             self.paused = !self.paused;
         }
 
-        // Smooth zoom control with keyboard
+        // Improved zoom control with keyboard
+        // Check for initial key press or continuous press
         if is_key_down(KeyCode::Z) {
-            self.camera.set_zoom(self.camera.zoom * 1.05);
+            // Apply stronger zoom factor for more noticeable effect
+            self.camera.set_zoom(self.camera.zoom * 1.07);
         }
         if is_key_down(KeyCode::X) {
-            self.camera.set_zoom(self.camera.zoom * 0.95);
+            // Apply stronger zoom factor for more noticeable effect
+            self.camera.set_zoom(self.camera.zoom * 0.93);
         }
 
         // Mouse wheel zoom control with focus on cursor position
