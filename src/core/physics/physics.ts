@@ -28,9 +28,6 @@ export function checkCollision(
     return true;
   }
   
-  // Check for collisions across world edges
-  const halfSize = worldSize / 2;
-  
   // Calculate wrapped distances in each direction
   const wrapX = dx > 0 ? dx - worldSize : dx + worldSize;
   const wrapY = dy > 0 ? dy - worldSize : dy + worldSize;
@@ -63,8 +60,6 @@ export function checkCollision(
  * @param worldSize Size of world for wrapping calculation
  */
 export function updatePositions(creatures: Creature[], delta: number, worldSize: number): void {
-  const halfSize = worldSize / 2;
-  
   for (const creature of creatures) {
     if (creature.isDead) continue;
     
@@ -73,15 +68,15 @@ export function updatePositions(creatures: Creature[], delta: number, worldSize:
     creature.position.y += creature.velocity.y * delta;
     
     // Apply world wrapping
-    if (creature.position.x > halfSize) {
+    if (creature.position.x > worldSize / 2) {
       creature.position.x -= worldSize;
-    } else if (creature.position.x < -halfSize) {
+    } else if (creature.position.x < -worldSize / 2) {
       creature.position.x += worldSize;
     }
     
-    if (creature.position.y > halfSize) {
+    if (creature.position.y > worldSize / 2) {
       creature.position.y -= worldSize;
-    } else if (creature.position.y < -halfSize) {
+    } else if (creature.position.y < -worldSize / 2) {
       creature.position.y += worldSize;
     }
     

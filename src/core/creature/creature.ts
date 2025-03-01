@@ -54,7 +54,7 @@ export async function createCreature(
   const config: CreatureConfig = {
     position,
     generation,
-    energy: 50,
+    energy: 100, // Increased initial energy
     neuralNetworkConfig: {
       inputSize: 8,  // Inputs: [closest food dx, closest food dy, energy, velocity x, velocity y, closest creature dx, closest creature dy, wall distance]
       outputSize: 3, // Outputs: [rotation change, acceleration, reproduce]
@@ -158,7 +158,7 @@ export async function createCreature(
         this.age += delta;
         
         // Decrease energy over time (metabolism cost)
-        this.energy -= delta * 2;
+        this.energy -= delta * 0.5; // Reduced from 2.0 to 0.5
         
         // Die if no energy left
         if (this.energy <= 0) {
@@ -188,8 +188,7 @@ export async function createCreature(
           }
         }
         
-        // Find closest creature
-        let closestCreature: Creature | null = null;
+        // Find closest creature for sensing
         let closestCreatureDistance = Infinity;
         let closestCreatureDx = 0;
         let closestCreatureDy = 0;
@@ -200,7 +199,6 @@ export async function createCreature(
           const { dx, dy, distance } = world.getShortestDistance(this.position, otherCreature.position);
           
           if (distance < closestCreatureDistance) {
-            closestCreature = otherCreature;
             closestCreatureDistance = distance;
             closestCreatureDx = dx;
             closestCreatureDy = dy;
@@ -371,7 +369,13 @@ export async function breedCreatures(
   parent1: Creature,
   parent2: Creature,
   position?: { x: number; y: number }
-): Promise<Creature> {
+): Promise<Creature | null> {
+  // Validate parents
+  if (!parent1 || !parent2 || parent1.isDead || parent2.isDead) {
+    console.error('Invalid parents for breeding');
+    return null;
+  }
+
   // If no position provided, place near one of the parents
   const pos = position || {
     x: parent1.position.x + (Math.random() * 2 - 1),
@@ -398,11 +402,6 @@ export async function breedCreatures(
     });
     await childBrain.init();
   }
-  
-  // Determine color as mix of parents, with slight mutation
-  const colorMix = (parent1.color + parent2.color) / 2;
-  const colorMutation = Math.random() * 0.2 - 0.1; // -0.1 to 0.1
-  const childColor = Math.max(0, Math.min(0xFFFFFF, colorMix * (1 + colorMutation)));
   
   // Create a child with generation+1
   const generation = Math.max(parent1.generation, parent2.generation) + 1;

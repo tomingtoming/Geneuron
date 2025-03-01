@@ -1,13 +1,21 @@
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import * as tf from '@tensorflow/tfjs';
 import { createCreature, breedCreatures, Creature } from '../creature/creature';
-import { createFood, consumeFood, removeFood, Food } from '../food/food';
+import { createFood, removeFood, Food } from '../food/food';
 import { setupWorld } from './world';
 import { checkFoodCollisions, checkCreatureCollisions, updatePositions } from '../physics/physics';
 
 // Track initialization state
 let isBackendInitialized = false;
+
+export interface SimulationStats {
+  fps: number;
+  creatureCount: number;
+  foodCount: number;
+  generation: number;
+  elapsedTime: number;
+}
 
 /**
  * Try to initialize TensorFlow.js with the best available backend
@@ -173,6 +181,8 @@ export async function initializeSimulation(container: HTMLDivElement) {
     // Wait for all creatures to be created and initialized
     const initialCreatures = await Promise.all(creaturePromises);
     creatures.push(...initialCreatures);
+    // Add all initial creatures to active set
+    initialCreatures.forEach(creature => activeCreatures.add(creature.id));
     
     // Spawn initial food
     for (let i = 0; i < INITIAL_FOOD_COUNT; i++) {
@@ -359,7 +369,7 @@ export async function initializeSimulation(container: HTMLDivElement) {
       }
       
       // Wait for all breeding to complete
-      const newCreatures = await Promise.all(breedingPromises);
+      const newCreatures = (await Promise.all(breedingPromises)).filter((creature): creature is Creature => creature !== null);
       newGeneration.push(...newCreatures);
       
       // Remove old dead creatures that we haven't already disposed
@@ -382,7 +392,7 @@ export async function initializeSimulation(container: HTMLDivElement) {
     };
     
     // Animation loop
-    const animate = (time: number) => {
+    const animate = async (time: number) => {
       requestAnimationFrame(animate);
       
       // Calculate delta time
@@ -438,7 +448,7 @@ export async function initializeSimulation(container: HTMLDivElement) {
         );
         
         // Check food collisions
-        const consumedFoods = checkFoodCollisions(
+        checkFoodCollisions(
           creatures.filter(c => !c.isDead && activeCreatures.has(c.id)),
           foods,
           world.settings.size,
@@ -504,9 +514,13 @@ export async function initializeSimulation(container: HTMLDivElement) {
               // Create child nearby
               const childX = parent.position.x + (Math.random() * 2 - 1);
               const childY = parent.position.y + (Math.random() * 2 - 1);
-              const child = breedCreatures(scene, parent, closestMate, { x: childX, y: childY });
-              creatures.push(child);
-              activeCreatures.add(child.id);
+              
+              // Use async/await to properly handle the Promise
+              const child = await breedCreatures(scene, parent, closestMate, { x: childX, y: childY });
+              if (child) {
+                creatures.push(child);
+                activeCreatures.add(child.id);
+              }
             } catch (error) {
               console.error('Error during reproduction:', error);
             }
@@ -595,24 +609,18 @@ export async function initializeSimulation(container: HTMLDivElement) {
       // Dispose of Three.js resources
       renderer.dispose();
       
-      // Clean up TensorFlow.js resources using the correct API
+      // Clean up TensorFlow.js resources
       try {
-        // Safely dispose TensorFlow.js resources using available methods
+        // Safely dispose TensorFlow.js resources
         tf.disposeVariables();
         
-        // Get memory info before cleanup attempt
-        const memoryInfo = tf.memory();
-        console.log('TensorFlow.js memory before cleanup:', memoryInfo);
-        
-        // Use the engine dispose method and garbage collection
-        tf.engine().dispose();
-        
         // Force garbage collection of any remaining tensors
-        if (typeof tf.tidy === 'function') {
-          tf.tidy(() => {
-            // Empty tidy block to trigger cleanup
-          });
-        }
+        tf.tidy(() => {
+          // Empty tidy block to trigger cleanup
+        });
+        
+        // Get memory info for debugging
+        console.log('TensorFlow.js memory after cleanup:', tf.memory());
       } catch (error) {
         console.error('Error cleaning up TensorFlow resources:', error);
       }

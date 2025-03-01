@@ -1,14 +1,12 @@
 import * as tf from '@tensorflow/tfjs';
-
-// Initialize TensorFlow.js backend
-let isModelInitialized = false;
+import { ActivationIdentifier } from '@tensorflow/tfjs-layers/dist/keras_format/activation_config';
 
 export interface NeuralNetworkConfig {
   inputSize: number;
   outputSize: number;
   hiddenLayers?: number[];
-  activationHidden?: string;
-  activationOutput?: string;
+  activationHidden?: ActivationIdentifier;
+  activationOutput?: ActivationIdentifier;
 }
 
 /**
@@ -187,13 +185,10 @@ export class NeuralNetwork {
     if (this.isDisposed) {
       throw new Error('Cannot clone a disposed neural network');
     }
-
-    return tf.tidy(() => {
-      const clone = new NeuralNetwork(this.config);
-      const weights = this.getWeights();
-      clone.setWeights(weights);
-      return clone;
-    });
+    const clone = new NeuralNetwork(this.config);
+    const weights = this.getWeights();
+    clone.setWeights(weights);
+    return clone;
   }
 
   /**
@@ -207,30 +202,26 @@ export class NeuralNetwork {
     if (this.isDisposed) {
       throw new Error('Cannot mutate a disposed neural network');
     }
-
-    return tf.tidy(() => {
-      const mutated = new NeuralNetwork(this.config);
-      const weights = this.getWeights();
-      const mutatedWeights: Float32Array[] = [];
-
-      for (const layerWeights of weights) {
-        const newLayerWeights = new Float32Array(layerWeights.length);
-        
-        for (let j = 0; j < layerWeights.length; j++) {
-          if (Math.random() < mutationRate) {
-            // Apply random mutation within range [-mutationAmount, mutationAmount]
-            newLayerWeights[j] = layerWeights[j] + (Math.random() * 2 - 1) * mutationAmount;
-          } else {
-            newLayerWeights[j] = layerWeights[j];
-          }
+    const mutated = new NeuralNetwork(this.config);
+    const weights = this.getWeights();
+    const mutatedWeights: Float32Array[] = [];
+    
+    for (const layerWeights of weights) {
+      const newLayerWeights = new Float32Array(layerWeights.length);
+      
+      for (let j = 0; j < layerWeights.length; j++) {
+        if (Math.random() < mutationRate) {
+          newLayerWeights[j] = layerWeights[j] + (Math.random() * 2 - 1) * mutationAmount;
+        } else {
+          newLayerWeights[j] = layerWeights[j];
         }
-        
-        mutatedWeights.push(newLayerWeights);
       }
-
-      mutated.setWeights(mutatedWeights);
-      return mutated;
-    });
+      
+      mutatedWeights.push(newLayerWeights);
+    }
+    
+    mutated.setWeights(mutatedWeights);
+    return mutated;
   }
 
   /**
@@ -252,8 +243,9 @@ export class NeuralNetwork {
       throw new Error('Cannot perform crossover with a disposed neural network');
     }
 
-    return tf.tidy(() => {
-      const child = new NeuralNetwork(this.config);
+    const child = new NeuralNetwork(this.config);
+    
+    tf.tidy(() => {
       const thisWeights = this.getWeights();
       const otherWeights = other.getWeights();
       const childWeights: Float32Array[] = [];
@@ -279,8 +271,9 @@ export class NeuralNetwork {
       }
 
       child.setWeights(childWeights);
-      return child;
     });
+
+    return child;
   }
 
   /**

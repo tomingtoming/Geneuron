@@ -27,8 +27,9 @@ function App() {
 
   // Ensure canvas container is mounted before initializing
   useLayoutEffect(() => {
+    // Remove unused destructuring
     if (canvasRef.current) {
-      const { width, height } = canvasRef.current.getBoundingClientRect();
+      canvasRef.current.getBoundingClientRect();
     }
   }, []);
 
@@ -63,13 +64,7 @@ function App() {
           
           // Set the callback to update the selected creature
           simulation.setSelectedCreatureCallback((creature) => {
-            return new Promise<void>((resolve) => {
-              setSelectedCreature(creature);
-              // Wait for next render
-              requestAnimationFrame(() => {
-                requestAnimationFrame(resolve);
-              });
-            });
+            setSelectedCreature(creature);
           });
           
           setIsInitializing(false);

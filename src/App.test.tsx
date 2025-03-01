@@ -6,7 +6,7 @@ import { initializeSimulation } from './core/world/simulation';
 
 // Mock the simulation module
 vi.mock('./core/world/simulation', () => ({
-  initializeSimulation: vi.fn().mockImplementation((container) => {
+  initializeSimulation: vi.fn().mockImplementation(() => {
     return new Promise((resolve) => {
       let selectedCreatureCallback: ((creature: any) => void) | null = null;
       
