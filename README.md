@@ -1,5 +1,7 @@
 # Geneuron
 
+[![CI](https://github.com/tomingtoming/geneuron/actions/workflows/ci.yml/badge.svg)](https://github.com/tomingtoming/geneuron/actions/workflows/ci.yml)
+
 Geneuron is an interactive neural evolution simulation where digital creatures evolve and adapt to their environment using neural networks. Watch as creatures learn to find food, avoid predators, and develop complex behaviors through natural selection.
 
 ## Features
