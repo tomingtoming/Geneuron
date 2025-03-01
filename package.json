@@ -28,7 +28,7 @@
   "bugs": {
     "url": "https://github.com/tomingtoming/geneuron/issues"
   },
-  "homepage": "https://github.com/tomingtoming/geneuron#readme",
+  "homepage": "https://tomingtoming.github.io/geneuron",
   "dependencies": {
     "@tensorflow/tfjs": "^4.22.0",
     "@tensorflow/tfjs-core": "^4.22.0",
