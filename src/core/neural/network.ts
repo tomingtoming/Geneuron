@@ -53,6 +53,7 @@ export class NeuralNetwork {
 
       // Create model layers synchronously inside tidy
       tf.tidy(() => {
+        // Essential log for debugging initialization issues
         console.log('Building neural network model');
         
         // Add first hidden layer
@@ -82,7 +83,6 @@ export class NeuralNetwork {
 
       // Get model summary outside of tidy
       await this.model.summary();
-      console.log('Neural network model constructed successfully');
       
       this.isInitialized = true;
     } catch (error) {

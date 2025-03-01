@@ -29,7 +29,6 @@ function App() {
   useLayoutEffect(() => {
     if (canvasRef.current) {
       const { width, height } = canvasRef.current.getBoundingClientRect();
-      console.log('Canvas container mounted with dimensions:', { width, height });
     }
   }, []);
 
@@ -57,11 +56,6 @@ function App() {
 
         // Create initialization promise
         initializationPromise.current = (async () => {
-          console.log('Attempting to initialize simulation with canvas container:', {
-            width: canvasRef.current?.clientWidth,
-            height: canvasRef.current?.clientHeight
-          });
-
           const simulation = await initializeSimulation(canvasRef.current!);
           console.log('Simulation initialized successfully');
           
@@ -69,8 +63,6 @@ function App() {
           
           // Set the callback to update the selected creature
           simulation.setSelectedCreatureCallback((creature) => {
-            console.log('Selected creature:', creature);
-            // Use a Promise to ensure state update is processed
             return new Promise<void>((resolve) => {
               setSelectedCreature(creature);
               // Wait for next render
@@ -107,7 +99,6 @@ function App() {
     }, 1000);
     
     return () => {
-      console.log('Cleaning up simulation');
       clearInterval(statsInterval);
       if (simulationRef.current) {
         simulationRef.current.cleanup();
