@@ -15,7 +15,7 @@ Geneuron is an interactive neural evolution simulation where digital creatures e
 
 ## Live Demo
 
-Try out the simulation: [Geneuron Demo](https://geneuron-demo.vercel.app) (Coming soon)
+Try out the simulation: [GitHub Pages Demo](https://tomingtoming.github.io/geneuron/)
 
 ## Getting Started
 
@@ -72,6 +72,14 @@ Try out the simulation: [Geneuron Demo](https://geneuron-demo.vercel.app) (Comin
 - **React**: User interface components
 - **Vite**: Fast development environment
 
+## Deployment
+
+### GitHub Pages
+
+This project is automatically deployed to GitHub Pages when changes are pushed to the main branch. You can view the live version at: [https://tomingtoming.github.io/geneuron/](https://tomingtoming.github.io/geneuron/)
+
+The deployment is handled through GitHub Actions, with the workflow configuration available in `.github/workflows/ci.yml`.
+
 ## Architecture
 
 The project follows a modular architecture:
@@ -96,6 +104,7 @@ geneuron/
 - [x] Neural network implementation
 - [x] Creature behavior and reproduction
 - [x] Food spawning and consumption
+- [x] GitHub Pages deployment
 - [ ] Predator-prey relationships
 - [ ] Enhanced visualization tools
 - [ ] Exportable/importable neural networks
